@@ -1,1 +1,236 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#eeeeee">
+  <title>금융 계산 도구 — 모바일 와이어프레임</title>
+  <style>
+    :root {
+      --bg: #e8e8e8;
+      --surface: #f7f7f7;
+      --panel: #ededed;
+      --line: #bcbcbc;
+      --ink: #292929;
+      --muted: #666;
+      --dark: #555;
+      --radius: 14px;
+    }
+    * { box-sizing: border-box; }
+    html { background: var(--bg); color: var(--ink); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif; }
+    body { margin: 0; min-width: 280px; }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    .desktop-note { display: none; }
+    .app { width: 100%; max-width: 430px; min-height: 100dvh; margin: 0 auto; background: var(--surface); padding-bottom: calc(82px + env(safe-area-inset-bottom)); box-shadow: 0 0 0 1px #d0d0d0; }
+    .topbar { padding: 22px 20px 16px; border-bottom: 1px solid var(--line); background: #f1f1f1; }
+    .eyebrow { color: var(--muted); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
+    h1 { font-size: 23px; line-height: 1.25; margin: 7px 0 6px; letter-spacing: -.04em; }
+    .subtitle { font-size: 12px; color: var(--muted); margin: 0; }
+    main { padding: 18px 16px 20px; }
+    .section-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 2px 10px; }
+    h2 { font-size: 14px; margin: 0; }
+    .section-tag { border: 1px solid var(--line); color: var(--muted); font-size: 10px; padding: 4px 7px; background: #f4f4f4; }
+    .mode-switch { display: grid; grid-template-columns: 1fr 1fr; padding: 4px; gap: 4px; background: #e7e7e7; border: 1px solid var(--line); border-radius: 12px; margin-bottom: 18px; }
+    .mode-switch button { border: 1px solid transparent; background: transparent; border-radius: 8px; color: #666; padding: 11px 8px; font-size: 13px; }
+    .mode-switch button[aria-pressed="true"] { background: #fafafa; border-color: #999; color: #222; font-weight: 700; box-shadow: 0 1px 2px #0000000d; }
+    .card { background: #f2f2f2; border: 1px solid var(--line); border-radius: var(--radius); padding: 15px; margin-bottom: 14px; }
+    .field { margin-top: 14px; }
+    .field:first-of-type { margin-top: 0; }
+    .label-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 7px; }
+    label { font-size: 12px; font-weight: 650; }
+    .hint { font-size: 10px; color: var(--muted); }
+    .input-wrap { display: flex; align-items: center; gap: 8px; background: #fafafa; border: 1px solid #aaa; border-radius: 9px; padding: 0 12px; min-height: 46px; }
+    .input-wrap input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--ink); font-size: 16px; font-weight: 600; text-align: right; padding: 10px 0; }
+    .unit { color: #666; font-size: 12px; white-space: nowrap; }
+    .select-wrap select { width: 100%; min-height: 44px; border: 1px solid #aaa; border-radius: 9px; background: #fafafa; padding: 0 11px; color: #333; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .primary { width: 100%; border: 1px solid #444; border-radius: 10px; background: #555; color: #fff; padding: 14px; font-size: 14px; font-weight: 700; margin-top: 16px; }
+    .primary:active { background: #333; }
+    .result-card { background: #e6e6e6; border: 1px solid #aaa; border-radius: var(--radius); padding: 16px; margin-bottom: 14px; }
+    .result-label { color: #555; font-size: 12px; }
+    .result-main { font-size: 27px; font-weight: 750; letter-spacing: -.04em; margin: 5px 0 14px; }
+    .result-main small { font-size: 13px; font-weight: 600; }
+    .result-lines { border-top: 1px solid #bcbcbc; padding-top: 10px; display: grid; gap: 9px; }
+    .result-line { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; }
+    .result-line span:first-child { color: #555; }
+    .result-line strong { font-weight: 700; text-align: right; }
+    .chart-card { padding: 15px; background: #f5f5f5; border: 1px dashed #aaa; border-radius: var(--radius); margin-bottom: 14px; }
+    .chart-title { display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; margin-bottom: 14px; }
+    .chart { height: 112px; display: flex; align-items: end; gap: 8px; padding: 0 6px; border-bottom: 1px solid #aaa; background: repeating-linear-gradient(to bottom, transparent 0, transparent 27px, #ddd 28px); }
+    .bar { flex: 1; min-width: 0; background: #b9b9b9; border: 1px solid #8f8f8f; position: relative; min-height: 8px; }
+    .bar:last-child { background: #777; }
+    .chart-labels { display: flex; justify-content: space-between; color: #666; font-size: 10px; padding: 6px 3px 0; }
+    .disclaimer { font-size: 10px; color: #777; line-height: 1.5; margin: 10px 2px 0; }
+    .bottom-nav { position: fixed; z-index: 5; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 430px; display: grid; grid-template-columns: repeat(3, 1fr); padding: 10px 8px calc(10px + env(safe-area-inset-bottom)); background: #f1f1f1; border-top: 1px solid #aaa; }
+    .nav-item { border: 0; background: transparent; color: #777; display: grid; gap: 4px; justify-items: center; font-size: 10px; padding: 3px; }
+    .nav-item .glyph { display: grid; place-items: center; width: 25px; height: 25px; border: 1px solid #aaa; border-radius: 7px; font-size: 13px; }
+    .nav-item.active { color: #222; font-weight: 700; }
+    .nav-item.active .glyph { background: #555; color: white; border-color: #555; }
+    .hidden { display: none !important; }
+    .toast { margin-top: 10px; color: #333; font-size: 11px; min-height: 14px; }
+    /* 데스크톱에서도 로컬 HTML 파일을 바로 확인할 수 있도록 모바일 폭으로 가운데 정렬 */
+    @media (min-width: 600px) {
+      body { padding: 24px 0; }
+      .app { min-height: calc(100dvh - 48px); border: 1px solid #c8c8c8; }
+      .bottom-nav { bottom: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="desktop-note" role="note">
+    <div class="note-card">
+      <strong>모바일 전용 와이어프레임</strong>
+      이 화면은 모바일 폭에서 확인하도록 설계되었습니다.<br>브라우저 창을 좁히거나 휴대폰에서 열어주세요.
+    </div>
+  </div>
+  <div class="app">
+    <header class="topbar">
+      <div class="eyebrow">MINI FINANCE · WIREFRAME</div>
+      <h1>내 금융 계산기</h1>
+      <p class="subtitle">조건을 입력하고 예상 금액을 간단히 비교해요.</p>
+    </header>
 
+    <main>
+      <div class="section-head">
+        <h2>계산 유형</h2><span class="section-tag">STEP 01</span>
+      </div>
+      <div class="mode-switch" role="group" aria-label="계산 유형 선택">
+        <button type="button" id="savingTab" aria-pressed="true">예·적금</button>
+        <button type="button" id="loanTab" aria-pressed="false">대출</button>
+      </div>
+
+      <section class="card" aria-labelledby="inputTitle">
+        <div class="section-head">
+          <h2 id="inputTitle">조건 입력</h2><span class="section-tag">필수 항목</span>
+        </div>
+        <div class="field">
+          <div class="label-row"><label for="principal" id="principalLabel">예치 원금</label><span class="hint">숫자만 입력</span></div>
+          <div class="input-wrap"><input id="principal" type="number" min="0" step="10000" value="10000000" inputmode="numeric"><span class="unit">원</span></div>
+        </div>
+        <div class="field hidden" id="paymentField">
+          <div class="label-row"><label for="monthlyPayment">월 납입액</label><span class="hint">적금 선택 시 참고</span></div>
+          <div class="input-wrap"><input id="monthlyPayment" type="number" min="0" step="10000" value="300000" inputmode="numeric"><span class="unit">원</span></div>
+        </div>
+        <div class="two-col">
+          <div class="field">
+            <div class="label-row"><label for="rate">연 이율</label></div>
+            <div class="input-wrap"><input id="rate" type="number" min="0" max="100" step="0.1" value="3.5" inputmode="decimal"><span class="unit">%</span></div>
+          </div>
+          <div class="field">
+            <div class="label-row"><label for="years">기간</label></div>
+            <div class="select-wrap"><select id="years"><option value="0.5">6개월</option><option value="1" selected>1년</option><option value="2">2년</option><option value="3">3년</option><option value="5">5년</option><option value="10">10년</option></select></div>
+          </div>
+        </div>
+        <div class="field">
+          <div class="label-row"><label for="interestType">이자 계산 방식</label></div>
+          <div class="select-wrap">
+            <select id="interestType"><option value="simple">단리 (간단 추정)</option><option value="compound">연 복리 (간단 추정)</option></select>
+          </div>
+        </div>
+        <div class="field" id="taxField">
+          <div class="label-row"><label for="tax">이자 과세</label></div>
+          <div class="select-wrap"><select id="tax"><option value="0.154" selected>일반 과세 (15.4%)</option><option value="0">비과세 (0%)</option><option value="0.014">저율 과세 (1.4%)</option></select></div>
+        </div>
+        <button class="primary" id="calculate" type="button">예상 금액 계산하기</button>
+        <div class="toast" id="message" aria-live="polite"></div>
+      </section>
+
+      <section class="result-card" aria-labelledby="resultTitle">
+        <div class="result-label" id="resultTitle">예상 만기 금액</div>
+        <div class="result-main" id="totalResult">10,295,300 <small>원</small></div>
+        <div class="result-lines">
+          <div class="result-line"><span id="paidLabel">예치 원금</span><strong id="paidResult">10,000,000원</strong></div>
+          <div class="result-line"><span id="interestLabel">세전 이자</span><strong id="interestResult">350,000원</strong></div>
+          <div class="result-line"><span>예상 세금</span><strong id="taxResult">53,900원</strong></div>
+          <div class="result-line"><span id="netLabel">세후 이자</span><strong id="netResult">296,100원</strong></div>
+        </div>
+      </section>
+
+      <section class="chart-card" aria-labelledby="chartHeading">
+        <div class="chart-title"><span id="chartHeading">금액 변화 미리보기</span><span class="hint">개념도</span></div>
+        <div class="chart" aria-label="기간별 예상 금액을 나타내는 개념 막대 그래프">
+          <div class="bar" style="height:30%"></div><div class="bar" style="height:43%"></div><div class="bar" style="height:56%"></div><div class="bar" style="height:70%"></div><div class="bar" style="height:84%"></div><div class="bar" style="height:100%"></div>
+        </div>
+        <div class="chart-labels"><span>시작</span><span>기간 경과</span><span>만기</span></div>
+        <p class="disclaimer">※ 와이어프레임용 개념 그래프입니다. 실제 계산 결과를 반영한 정밀 차트가 아니며, 금융기관의 상품 조건·수수료·세금 처리에 따라 실제 금액은 달라질 수 있습니다.</p>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="하단 메뉴">
+      <button class="nav-item active" type="button"><span class="glyph">₩</span><span>계산기</span></button>
+      <button class="nav-item" type="button" id="compareNav"><span class="glyph">⇄</span><span>비교하기</span></button>
+      <button class="nav-item" type="button" id="guideNav"><span class="glyph">?</span><span>이용 안내</span></button>
+    </nav>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    let mode = "saving";
+
+    function won(value) {
+      return Math.round(value).toLocaleString("ko-KR") + "원";
+    }
+    function setMode(nextMode) {
+      mode = nextMode;
+      $("savingTab").setAttribute("aria-pressed", String(mode === "saving"));
+      $("loanTab").setAttribute("aria-pressed", String(mode === "loan"));
+      $("principalLabel").textContent = mode === "saving" ? "예치 원금" : "대출 원금";
+      $("resultTitle").textContent = mode === "saving" ? "예상 만기 금액" : "예상 총 상환액";
+      $("paidLabel").textContent = mode === "saving" ? "예치 원금" : "대출 원금";
+      $("interestLabel").textContent = mode === "saving" ? "세전 이자" : "예상 이자";
+      $("netLabel").textContent = mode === "saving" ? "세후 이자" : "원금 포함 금액";
+      $("taxField").classList.toggle("hidden", mode === "loan");
+      $("paymentField").classList.add("hidden");
+      $("message").textContent = mode === "loan" ? "간단 추정 방식입니다. 원리금균등상환 등 실제 상환 일정은 반영하지 않습니다." : "";
+      calculate();
+    }
+    function calculate() {
+      const principal = Math.max(0, Number($("principal").value) || 0);
+      const rate = Math.max(0, Math.min(100, Number($("rate").value) || 0)) / 100;
+      const years = Number($("years").value) || 1;
+      const taxRate = mode === "saving" ? Number($("tax").value) : 0;
+      const compound = $("interestType").value === "compound";
+      let grossInterest = compound ? principal * (Math.pow(1 + rate, years) - 1) : principal * rate * years;
+      let tax = grossInterest * taxRate;
+      let netInterest = grossInterest - tax;
+      let total = principal + netInterest;
+
+      if (mode === "loan") {
+        // Simplified interest-only estimate; excludes repayment schedule and fees.
+        tax = 0;
+        netInterest = grossInterest;
+        total = principal + grossInterest;
+        $("taxResult").textContent = "미포함";
+        $("netResult").textContent = won(total);
+      } else {
+        $("taxResult").textContent = won(tax);
+        $("netResult").textContent = won(netInterest);
+      }
+      $("totalResult").innerHTML = won(total).replace("원", "") + ' <small>원</small>';
+      $("paidResult").textContent = won(principal);
+      $("interestResult").textContent = won(grossInterest);
+      if (mode === "loan") {
+        $("message").textContent = "대출 이자를 단순 추정한 값입니다. 실제 월 상환액과 다를 수 있어요.";
+      } else if (principal === 0) {
+        $("message").textContent = "원금을 입력하면 예상 금액을 확인할 수 있어요.";
+      } else {
+        $("message").textContent = "입력 조건을 기준으로 계산했어요. 실제 상품 조건을 확인하세요.";
+      }
+    }
+    $("savingTab").addEventListener("click", () => setMode("saving"));
+    $("loanTab").addEventListener("click", () => setMode("loan"));
+    $("calculate").addEventListener("click", calculate);
+    ["principal", "rate", "years", "interestType", "tax"].forEach(id => $(id).addEventListener("change", calculate));
+    $("compareNav").addEventListener("click", () => {
+      $("message").textContent = "비교하기 기능은 다음 단계에서 추가할 항목입니다.";
+      $("message").scrollIntoView({behavior:"smooth", block:"nearest"});
+    });
+    $("guideNav").addEventListener("click", () => {
+      $("message").textContent = "금액은 입력값을 이용한 단순 추정치입니다. 투자·대출 결정 전 금융기관의 조건을 확인하세요.";
+      $("message").scrollIntoView({behavior:"smooth", block:"nearest"});
+    });
+    calculate();
+  </script>
+</body>
+</html>
