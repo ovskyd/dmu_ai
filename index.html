@@ -479,6 +479,39 @@
                     </div>
                 </div>
 
+                <!-- Comparison Result Graph -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm space-y-3">
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-800">조건별 결과 그래프</h3>
+                        <p class="text-[11px] text-slate-400 mt-0.5">세후 이자를 막대 길이로 비교해 차이를 확인할 수 있습니다.</p>
+                    </div>
+                    <div class="space-y-3" role="img" aria-label="조건 A와 조건 B의 세후 이자 비교 그래프">
+                        <div class="space-y-1.5">
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="font-bold text-slate-600">조건 A</span>
+                                <span id="cmp-chart-a-value" class="font-bold text-slate-800">296,100원</span>
+                            </div>
+                            <div class="h-4 rounded-full bg-slate-100 overflow-hidden">
+                                <div id="cmp-chart-a-bar" class="h-full rounded-full bg-indigo-500 transition-all duration-300" style="width:87.5%"></div>
+                            </div>
+                        </div>
+                        <div class="space-y-1.5">
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="font-bold text-purple-700">조건 B</span>
+                                <span id="cmp-chart-b-value" class="font-bold text-purple-800">338,400원</span>
+                            </div>
+                            <div class="h-4 rounded-full bg-slate-100 overflow-hidden">
+                                <div id="cmp-chart-b-bar" class="h-full rounded-full bg-purple-500 transition-all duration-300" style="width:100%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between border-t border-slate-100 pt-2">
+                        <span class="text-[11px] text-slate-500">세후 이자 차이</span>
+                        <strong id="cmp-chart-diff" class="text-xs text-purple-700">42,300원</strong>
+                    </div>
+                    <p class="text-[10px] text-slate-400 leading-relaxed">※ 막대 길이는 두 조건 중 더 큰 세후 이자를 100%로 하여 표시합니다.</p>
+                </div>
+
                 <div class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 rounded-2xl shadow-md space-y-1">
                     <span class="text-[10px] uppercase font-bold text-purple-200">비교 요약</span>
                     <h4 id="cmp-summary-title" class="text-sm font-bold">조건 B가 세후 42,300원 더 유리합니다!</h4>
@@ -765,6 +798,18 @@
             document.getElementById('loan-res-total-payment').textContent = `${formatNum(totalPayment)}원`;
         }
 
+        // Comparison graph renderer: relative bar lengths make the interest gap easy to see.
+        function renderCompareChart(netA, netB) {
+            const maxValue = Math.max(netA, netB, 0);
+            const widthA = maxValue > 0 ? (netA / maxValue) * 100 : 0;
+            const widthB = maxValue > 0 ? (netB / maxValue) * 100 : 0;
+            document.getElementById('cmp-chart-a-bar').style.width = `${widthA}%`;
+            document.getElementById('cmp-chart-b-bar').style.width = `${widthB}%`;
+            document.getElementById('cmp-chart-a-value').textContent = `${formatNum(netA)}원`;
+            document.getElementById('cmp-chart-b-value').textContent = `${formatNum(netB)}원`;
+            document.getElementById('cmp-chart-diff').textContent = `${formatNum(Math.abs(netA - netB))}원`;
+        }
+
         // 4. Comparison Calculation Logic
         function calcCompare() {
             const amtA = parseFloat(document.getElementById('cmp-a-amt').value) || 0;
@@ -789,6 +834,8 @@
 
             document.getElementById('cmp-res-b-net').textContent = `${formatNum(netB)}원`;
             document.getElementById('cmp-res-b-total').textContent = `${formatNum(totalB)}원`;
+
+            renderCompareChart(netA, netB);
 
             const diffNet = Math.abs(netA - netB);
             const titleEl = document.getElementById('cmp-summary-title');
