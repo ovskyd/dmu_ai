@@ -1,5 +1,6 @@
 let currentScreen = 'home';
 let currentUser = JSON.parse(localStorage.getItem('fin_calc_user')) || null;
+let currentMypageTab = 'history';
 
 const initialMockHistory = [
     { id: 1, type: 'deposit', title: '예금 계산', date: '2026.11.03', amount: '10,296,100원', sub: '원금 1,000만원 · 연 3.5%' },
@@ -13,6 +14,15 @@ function getHistory() {
 
 function saveHistoryData(data) {
     localStorage.setItem('fin_calc_history', JSON.stringify(data));
+}
+
+function getUsersDB() {
+    const users = localStorage.getItem('fin_calc_users');
+    return users ? JSON.parse(users) : [];
+}
+
+function saveUsersDB(users) {
+    localStorage.setItem('fin_calc_users', JSON.stringify(users));
 }
 
 function navTo(screenId) {
@@ -92,22 +102,59 @@ function toggleAuthMode(mode) {
 
 function handleAuthSubmit(event, type) {
     event.preventDefault();
+    const users = getUsersDB();
+
     if (type === 'signup') {
-        const name = document.getElementById('signup-name').value;
-        const email = document.getElementById('signup-email').value;
+        const name = document.getElementById('signup-name').value.trim();
+        const email = document.getElementById('signup-email').value.trim();
+        const pw = document.getElementById('signup-pw').value;
+
+        const existingUser = users.find(u => u.email === email);
+        if (existingUser) {
+            showToast('이미 가입된 이메일입니다. 로그인해 주세요.');
+            toggleAuthMode('login');
+            document.getElementById('login-email').value = email;
+            return;
+        }
+
+        const newUser = { name, email, pw };
+        users.push(newUser);
+        saveUsersDB(users);
+
         currentUser = { name, email };
-        showToast(`${name}님 회원가입을 축하합니다!`);
+        localStorage.setItem('fin_calc_user', JSON.stringify(currentUser));
+        showToast(`${name}님, 회원가입 완료 및 로그인되었습니다!`);
+        closeAuthModal();
+        updateHeaderAuthUI();
+        renderHomeRecent();
+        if (currentScreen === 'mypage') renderMypage();
+
     } else {
-        const email = document.getElementById('login-email').value;
-        const name = email.split('@')[0];
-        currentUser = { name: name || '사용자', email };
-        showToast('성공적으로 로그인되었습니다.');
+        const email = document.getElementById('login-email').value.trim();
+        const pw = document.getElementById('login-pw').value;
+
+        const matchedUser = users.find(u => u.email === email);
+
+        if (!matchedUser) {
+            showToast('가입되지 않은 계정입니다. 회원가입을 먼저 진행해주세요.');
+            toggleAuthMode('signup');
+            document.getElementById('signup-email').value = email;
+            return;
+        }
+
+        if (matchedUser.pw !== pw) {
+            showToast('비밀번호가 일치하지 않습니다. 다시 확인해주세요.');
+            return;
+        }
+
+        currentUser = { name: matchedUser.name, email: matchedUser.email };
+        localStorage.setItem('fin_calc_user', JSON.stringify(currentUser));
+        showToast(`${matchedUser.name}님, 환영합니다!`);
+        closeAuthModal();
+        updateHeaderAuthUI();
+        renderHomeRecent();
+        if (currentScreen === 'mypage') renderMypage();
     }
-    localStorage.setItem('fin_calc_user', JSON.stringify(currentUser));
-    closeAuthModal();
-    updateHeaderAuthUI();
-    renderHomeRecent();
-    if (currentScreen === 'mypage') renderMypage();
 }
 
 function handleLogout() {
@@ -167,7 +214,6 @@ function renderMypage() {
     renderHistoryList();
 }
 
-let currentMypageTab = 'history';
 function switchMypageTab(tab) {
     currentMypageTab = tab;
 
@@ -313,18 +359,51 @@ function renderHistoryList() {
 
 function renderHomeRecent() {
     const container = document.getElementById('home-recent-list');
+    const viewAllBtn = document.getElementById('home-view-all-btn');
 
     if (!currentUser) {
+        if (viewAllBtn) viewAllBtn.classList.add('hidden');
         container.innerHTML = `
-            <div class="bg-white p-4 rounded-xl border border-slate-100 text-center space-y-2">
-                <p class="text-xs text-slate-500 font-medium">로그인하고 저장된 계산 결과를 확인해 보세요.</p>
-                <button onclick="openAuthModal('login')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-bold px-3 py-1.5 rounded-lg text-xs transition-all active-tap inline-flex items-center gap-1.5">
-                    <i class="fa-solid fa-right-to-bracket"></i> 로그인하러 가기
+            <!-- Interactive Sample Preview Card for Non-Logged Users -->
+            <div class="bg-gradient-to-br from-slate-900 to-indigo-950 text-white p-4 rounded-2xl shadow-md border border-indigo-500/30 space-y-3 relative overflow-hidden">
+
+                <!-- Sample Item 1: After-Tax Return -->
+                <div class="bg-white/10 backdrop-blur-md p-3 rounded-xl border border-white/10 flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-lg bg-indigo-500/30 text-indigo-300 flex items-center justify-center text-xs font-bold">
+                            <i class="fa-solid fa-vault"></i>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-indigo-200 block">정기예금 (원금 1,000만원 · 12개월)</span>
+                            <div class="text-xs font-black text-white">세후 실수령액 <span class="text-emerald-400">10,296,100원</span></div>
+                        </div>
+                    </div>
+                    <span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded font-bold">이자 +29.6만</span>
+                </div>
+
+                <!-- Sample Item 2: Comparison Example -->
+                <div class="bg-purple-950/50 p-3 rounded-xl border border-purple-400/30 flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-lg bg-purple-500/30 text-purple-300 flex items-center justify-center text-xs font-bold">
+                            <i class="fa-solid fa-code-compare"></i>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-purple-200 block">조건 A(3.5%) vs 조건 B(4.0%) 비교</span>
+                            <div class="text-xs font-black text-amber-300">조건 B가 세후 +42,300원 더 유리!</div>
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-purple-300 text-xs"></i>
+                </div>
+
+                <button onclick="openAuthModal('login')" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 rounded-xl text-xs transition-all active-tap shadow-sm flex items-center justify-center gap-1.5 mt-1">
+                    <i class="fa-solid fa-right-to-bracket"></i> 로그인하고 내 실시간 저장기능 시작하기
                 </button>
             </div>
         `;
         return;
     }
+
+    if (viewAllBtn) viewAllBtn.classList.remove('hidden');
 
     const list = getHistory().slice(0, 2);
     if(list.length === 0) {
