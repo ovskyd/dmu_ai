@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>금융 계산기 프로토타입</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81',
+                        },
+                        accent: {
+                            500: '#10b981',
+                            600: '#059669',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Apple SD Gothic Neo', 'Malgun Gothic', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Custom scrollbar for mobile frame */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Screen transition effect */
+        .page-screen {
+            display: none;
+            opacity: 0;
+            transform: translateY(8px);
+            transition: opacity 0.25s ease, transform 0.25s ease;
+        }
+        .page-screen.active {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Ripple / click effect */
+        .active-tap:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-800 font-sans min-h-screen flex items-center justify-center p-0">
+
+    <!-- Mobile Screen Wrapper (App Outer Shell) -->
+    <div class="w-full max-w-md h-screen bg-slate-50 shadow-2xl flex flex-col overflow-hidden relative border-0">
+
+        <!-- App Header Bar -->
+        <header id="app-header" class="bg-gradient-to-r from-indigo-700 via-indigo-600 to-violet-600 text-white px-5 py-3 flex items-center justify-between shadow-md shrink-0 z-10">
+            <div class="flex items-center gap-3">
+                <button id="btn-back" onclick="goBack()" class="hidden text-white hover:text-indigo-200 transition-colors w-8 h-8 rounded-full flex items-center justify-center active-tap">
+                    <i class="fa-solid fa-chevron-left text-lg"></i>
+                </button>
+                <div>
+                    <span class="text-[10px] tracking-widest uppercase text-indigo-200 font-bold block leading-none">MY FINANCE TOOL</span>
+                    <h1 id="header-title" class="text-lg font-bold tracking-tight leading-tight">금융 계산기</h1>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="navTo('history')" class="bg-white/10 hover:bg-white/20 text-white text-xs px-3 py-1.5 rounded-full backdrop-blur-md transition-all flex items-center gap-1.5 font-medium active-tap">
+                    <i class="fa-regular fa-bookmark text-amber-300"></i>
+                    <span>기록</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Dynamic Main Content Area -->
+        <main class="flex-1 overflow-y-auto no-scrollbar p-4 space-y-4 pb-20 relative">
+
+            <!-- ================= PAGE 01: HOME ================= -->
+            <section id="screen-home" class="page-screen active space-y-4">
+                <div class="bg-gradient-to-br from-indigo-600 to-violet-700 text-white rounded-2xl p-5 shadow-lg relative overflow-hidden">
+                    <div class="absolute -right-4 -bottom-4 w-28 h-28 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+                    <span class="inline-block bg-white/20 text-indigo-100 text-[10px] font-semibold px-2.5 py-0.5 rounded-full mb-2">스마트 금융 도구</span>
+                    <h2 class="text-xl font-extrabold mb-1">내 든든한 맞춤 금융 계산기</h2>
+                    <p class="text-xs text-indigo-100 leading-relaxed opacity-90">예금, 적금, 대출 예상 수령액부터 두 가지 조건의 이자 차이까지 쉽고 정확하게 비교해 보세요.</p>
+                </div>
+
+                <div class="space-y-2.5">
+                    <h3 class="text-sm font-bold text-slate-700 px-1 flex items-center gap-1.5">
+                        <i class="fa-solid fa-calculator text-indigo-600"></i> 어떤 계산을 할까요?
+                    </h3>
+                    
+                    <!-- Menu Cards -->
+                    <div onclick="navTo('deposit')" class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex items-center justify-between cursor-pointer active-tap group">
+                        <div class="flex items-center gap-3.5">
+                            <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl font-bold group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                                <i class="fa-solid fa-vault"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-800 text-sm">예금 계산</h4>
+                                <p class="text-xs text-slate-400 mt-0.5">목돈을 한 번에 맡겼을 때 예상 금액</p>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-slate-300 group-hover:text-indigo-600 transition-colors text-sm"></i>
+                    </div>
+
+                    <div onclick="navTo('savings')" class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex items-center justify-between cursor-pointer active-tap group">
+                        <div class="flex items-center gap-3.5">
+                            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl font-bold group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                                <i class="fa-solid fa-piggy-bank"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-800 text-sm">적금 계산</h4>
+                                <p class="text-xs text-slate-400 mt-0.5">매월 꾸준히 저축했을 때 예상 수령액</p>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-slate-300 group-hover:text-emerald-600 transition-colors text-sm"></i>
+                    </div>
+
+                    <div onclick="navTo('loan')" class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex items-center justify-between cursor-pointer active-tap group">
+                        <div class="flex items-center gap-3.5">
+                            <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl font-bold group-hover:bg-amber-600 group-hover:text-white transition-colors">
+                                <i class="fa-solid fa-hand-holding-dollar"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-800 text-sm">대출 계산</h4>
+                                <p class="text-xs text-slate-400 mt-0.5">월 상환 원리금과 총 이자 비용 계산</p>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-slate-300 group-hover:text-amber-600 transition-colors text-sm"></i>
+                    </div>
+
+                    <div onclick="navTo('compare')" class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex items-center justify-between cursor-pointer active-tap group">
+                        <div class="flex items-center gap-3.5">
+                            <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl font-bold group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                                <i class="fa-solid fa-code-compare"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-800 text-sm">조건 비교하기</h4>
+                                <p class="text-xs text-slate-400 mt-0.5">금리/기간 조건 A vs B 직접 비교</p>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-slate-300 group-hover:text-purple-600 transition-colors text-sm"></i>
+                    </div>
+                </div>
+
+                <!-- Recent Saved Activity Preview -->
+                <div class="space-y-2 pt-2">
+                    <div class="flex justify-between items-center px-1">
+                        <h3 class="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+                            <i class="fa-solid fa-clock-rotate-left text-slate-500"></i> 최근 저장한 계산
+                        </h3>
+                        <button onclick="navTo('history')" class="text-xs text-indigo-600 font-semibold hover:underline">전체보기</button>
+                    </div>
+
+                    <div id="home-recent-list" class="space-y-2">
+                        <!-- Dynamic Recent List populated via JS -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= PAGE 02: DEPOSIT CALCULATOR ================= -->
+            <section id="screen-deposit" class="page-screen space-y-4">
+                <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 space-y-4">
+                    <div class="border-b border-slate-100 pb-3">
+                        <h2 class="text-base font-bold text-slate-800">예금 조건 입력</h2>
+                        <p class="text-xs text-slate-400">예치할 목돈과 기간, 연 이자율을 입력해주세요.</p>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">예치 금액</label>
+                            <div class="relative">
+                                <input type="number" id="dep-amount" value="10000000" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-800 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all pr-10">
+                                <span class="absolute right-3.5 top-2.5 text-xs font-medium text-slate-400">원</span>
+                            </div>
+                            <div class="flex gap-1.5 mt-1.5">
+                                <button onclick="addValue('dep-amount', 1000000)" class="text-[11px] bg-slate-100 text-slate-600 px-2 py-1 rounded-lg font-medium hover:bg-indigo-50 hover:text-indigo-600">+100만</button>
+                                <button onclick="addValue('dep-amount', 5000000)" class="text-[11px] bg-slate-100 text-slate-600 px-2 py-1 rounded-lg font-medium hover:bg-indigo-50 hover:text-indigo-600">+500만</button>
+                                <button onclick="addValue('dep-amount', 10000000)" class="text-[11px] bg-slate-100 text-slate-600 px-2 py-1 rounded-lg font-medium hover:bg-indigo-50 hover:text-indigo-600">+1,000만</button>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">예치 기간</label>
+                                <div class="relative">
+                                    <input type="number" id="dep-period" value="12" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-800 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all pr-12">
+                                    <span class="absolute right-3.5 top-2.5 text-xs font-medium text-slate-400">개월</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">연 이자율</label>
+                                <div class="relative">
+                                    <input type="number" step="0.1" id="dep-rate" value="3.5" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-800 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all pr-8">
+                                    <span class="absolute right-3.5 top-2.5 text-xs font-medium text-slate-400">%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">이자 계산 방식</label>
+                                <select id="dep-type" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-indigo-500">
+                                    <option value="simple">단리</option>
+                                    <option value="compound">복리 (월복리)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">이자 과세</label>
+                                <select id="dep-tax" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-indigo-500">
+                                    <option value="15.4">일반과세 (15.4%)</option>
+                                    <option value="9.5">세금우대 (9.5%)</option>
+                                    <option value="0">비과세 (0%)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="calcDeposit()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-indigo-200 text-sm transition-all active-tap">
+                        예금 계산하기
+                    </button>
+                </div>
+
+                <!-- Deposit Result Card (Shown after calculation) -->
+                <div id="dep-result-card" class="bg-white rounded-2xl p-4 shadow-sm border border-indigo-100 space-y-4">
+                    <div class="bg-gradient-to-r from-indigo-50 to-violet-50 p-4 rounded-xl border border-indigo-100 text-center">
+                        <span class="text-xs text-indigo-600 font-bold block mb-1">세후 예상 수령액</span>
+                        <div id="dep-res-total" class="text-2xl font-black text-indigo-900">10,296,100원</div>
+                        <span class="text-[11px] text-slate-400 mt-0.5 block">원금 + 세후 이자</span>
+                    </div>
+
+                    <div class="space-y-2 text-xs divide-y divide-slate-100">
+                        <div class="flex justify-between py-1.5"><span class="text-slate-500">예치 원금</span><span id="dep-res-principal" class="font-bold text-slate-800">10,000,000원</span></div>
+                        <div class="flex justify-between py-1.5"><span class="text-slate-500">세전 이자</span><span id="dep-res-gross" class="font-bold text-emerald-600">+350,000원</span></div>
+                        <div class="flex justify-between py-1.5"><span class="text-slate-500">이자 소득세</span><span id="dep-res-tax" class="font-bold text-rose-500">-53,900원</span></div>
+                        <div class="flex justify-between py-1.5"><span class="text-slate-500">세후 이자</span><span id="dep-res-net" class="font-bold text-indigo-600">+296,100원</span></div>
+                    </div>
+
+                    <div class="bg-slate-50 p-3 rounded-xl text-[11px] text-slate-500 flex justify-between items-center">
+                        <span>적용 조건</span>
+                        <span id="dep-res-summary" class="font-semibold text-slate-700">12개월 · 3.5% · 단리 · 일반과세</span>
+                    </div>
+
+                    <button onclick="saveCurrentResult('deposit')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow-md text-xs transition-all active-tap flex items-center justify-center gap-2">
+                        <i class="fa-regular fa-bookmark"></i> 이 결과 저장하기
+                    </button>
+                </div>
+            </section>
+
+            <!-- ================= PAGE 03: SAVINGS CALCULATOR ================= -->
+            <section id="screen-savings" class="page-screen space-y-4">
+                <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 space-y-4">
+                    <div class="border-b border-slate-100 pb-3">
+                        <h2 class="text-base font-bold text-slate-800">적금 조건 입력</h2>
+                        <p class="text-xs text-slate-400">매월 납입할 금액과 저축 기간, 금리를 입력하세요.</p>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">월 납입 금액</label>
+                            <div class="relative">
+                                <input type="number" id="sav-amount" value="300000" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-800 focus:outline-none focus:border-emerald-500 focus:bg-white transition-all pr-10">
+                                <span class="absolute right-3.5 top-2.5 text-xs font-medium text-slate-400">원</span>
+                            </div>
+                            <div class="flex gap-1.5 mt-1.5">
+                                <button onclick="addValue('sav-amount', 100000)" class="text-[11px] bg-slate-100 text-slate-600 px-2 py-1 rounded-lg font-medium hover:bg-emerald-50 hover:text-emerald-600">+10만</button>
+                                <button onclick="addValue('sav-amount', 300000)" class="text-[11px] bg-slate-100 text-slate-600 px-2 py-1 rounded-lg font-medium hover:bg-emerald-50 hover:text-emerald-600">+30만</button>
+                                <button onclick="addValue('sav-amount', 500000)" class="text-[11px] bg-slate-100 text-slate-600 px-2 py-1 rounded-lg font-medium hover:bg-emerald-50 hover:text-emerald-600">+50만</button>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">저축 기간</label>
+                                <div class="relative">
+                                    <input type="number" id="sav-period" value="12" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-800 focus:outline-none focus:border-emerald-500 focus:bg-white transition-all pr-12">
+                                    <span class="absolute right-3.5 top-2.5 text-xs font-medium text-slate-400">개월</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">연 이자율</label>
+                                <div class="relative">
+                                    <input type="number" step="0.1" id="sav-rate" value="4.0" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-800 focus:outline-none focus:border-emerald-500 focus:bg-white transition-all pr-8">
+                                    <span class="absolute right-3.5 top-2.5 text-xs font-medium text-slate-400">%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">이자 과세</label>
+                            <select id="sav-tax" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500">
+                                <option value="15.4">일반과세 (15.4%)</option>
+                                <option value="9.5">세금우대 (9.5%)</option>
+                                <option value="0">비과세 (0%)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button onclick="calcSavings()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-emerald-200 text-sm transition-all active-tap">
+                        적금 계산하기
+                    </button>
+                </div>
+
+                <!-- Savings Result Card -->
+                <div id="sav-result-card" class="bg-white rounded-2xl p-4 shadow-sm border border-emerald-100 space-y-4">
+                    <div class="bg-gradient-to-r from-emerald-50 to-teal-50 p-4 rounded-xl border border-emerald-100 text-center">
+                        <span class="text-xs text-emerald-600 font-bold block mb-1">세후 예상 수령액</span>
+                        <div id="sav-res-total" class="text-2xl font-black text-emerald-900">3,665,988원</div>
+                        <span class="text-[11px] text-slate-400 mt-0.5 block">총 납입원금 + 세후 이자</span>
+                    </div>
+
+                    <div class="space-y-2 text-xs divide-y divide-slate-100">
+                        <div class="flex justify-between py-1.5"><span class="text-slate-500">총 납입 원금</span><span id="sav-res-principal" class="font-bold text-slate-800">3,600,000원</span></div>
+                        <div class="flex justify-between py-1.5"><span class="text-slate-500">세전 이자</span><span id="sav-res-gross" class="font-bold text-emerald-600">+78,000원</span></div>
+                        <div class="flex justify-between py-1.5"><span class="text-slate-500">이자 소득세</span><span id="sav-res-tax" class="font-bold text-rose-500">-12,012원</span></div>
+                        <div class="flex justify-between py-1.5"><span class="text-slate-500">세후 이자</span><span id="sav-res-net" class="font-bold text-emerald-600">+65,988원</span></div>
+                    </div>
+
+                    <button onclick="saveCurrentResult('savings')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow-md text-xs transition-all active-tap flex items-center justify-center gap-2">
+                        <i class="fa-regular fa-bookmark"></i> 이 결과 저장하기
+                    </button>
+                </div>
+            </section>
+
+            <!-- ================= PAGE 04: LOAN CALCULATOR ================= -->
+            <section id="screen-loan" class="page-screen space-y-4">
+                <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 space-y-4">
+                    <div class="border-b border-slate-100 pb-3">
+                        <h2 class="text-base font-bold text-slate-800">대출 조건 입력</h2>
+                        <p class="text-xs text-slate-400">대출할 금액과 기간, 상환 방식을 선택하세요.</p>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">대출 금액</label>
+                            <div class="relative">
+                                <input type="number" id="loan-amount" value="20000000" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-800 focus:outline-none focus:border-amber-500 focus:bg-white transition-all pr-10">
+                                <span class="absolute right-3.5 top-2.5 text-xs font-medium text-slate-400">원</span>
+                            </div>
+                            <div class="flex gap-1.5 mt-1.5">
+                                <button onclick="addValue('loan-amount', 5000000)" class="text-[11px] bg-slate-100 text-slate-600 px-2 py-1 rounded-lg font-medium hover:bg-amber-50 hover:text-amber-600">+500만</button>
+                                <button onclick="addValue('loan-amount', 10000000)" class="text-[11px] bg-slate-100 text-slate-600 px-2 py-1 rounded-lg font-medium hover:bg-amber-50 hover:text-amber-600">+1,000만</button>
+                                <button onclick="addValue('loan-amount', 50000000)" class="text-[11px] bg-slate-100 text-slate-600 px-2 py-1 rounded-lg font-medium hover:bg-amber-50 hover:text-amber-600">+5,000만</button>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">대출 기간</label>
+                                <div class="relative">
+                                    <input type="number" id="loan-period" value="36" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-800 focus:outline-none focus:border-amber-500 focus:bg-white transition-all pr-12">
+                                    <span class="absolute right-3.5 top-2.5 text-xs font-medium text-slate-400">개월</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">연 이자율</label>
+                                <div class="relative">
+                                    <input type="number" step="0.1" id="loan-rate" value="5.0" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-800 focus:outline-none focus:border-amber-500 focus:bg-white transition-all pr-8">
+                                    <span class="absolute right-3.5 top-2.5 text-xs font-medium text-slate-400">%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">상환 방식</label>
+                            <select id="loan-type" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-amber-500">
+                                <option value="equal-principal-interest">원리금균등상환</option>
+                                <option value="equal-principal">원금균등상환</option>
+                                <option value="bullet">만기일시상환</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button onclick="calcLoan()" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-amber-200 text-sm transition-all active-tap">
+                        대출 계산하기
+                    </button>
+                </div>
+
+                <!-- Loan Result Card -->
+                <div id="loan-result-card" class="bg-white rounded-2xl p-4 shadow-sm border border-amber-100 space-y-4">
+                    <div class="bg-gradient-to-r from-amber-50 to-orange-50 p-4 rounded-xl border border-amber-100 text-center">
+                        <span class="text-xs text-amber-600 font-bold block mb-1">월 평균 상환액</span>
+                        <div id="loan-res-monthly" class="text-2xl font-black text-amber-900">599,418원</div>
+                        <span id="loan-res-type-desc" class="text-[11px] text-slate-400 mt-0.5 block">원리금균등상환 기준</span>
+                    </div>
+
+                    <div class="space-y-2 text-xs divide-y divide-slate-100">
+                        <div class="flex justify-between py-1.5"><span class="text-slate-500">대출 원금</span><span id="loan-res-principal" class="font-bold text-slate-800">20,000,000원</span></div>
+                        <div class="flex justify-between py-1.5"><span class="text-slate-500">총 발생 이자</span><span id="loan-res-total-interest" class="font-bold text-rose-500">1,579,046원</span></div>
+                        <div class="flex justify-between py-1.5"><span class="text-slate-500">총 상환 금액</span><span id="loan-res-total-payment" class="font-bold text-amber-600">21,579,046원</span></div>
+                    </div>
+
+                    <button onclick="saveCurrentResult('loan')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow-md text-xs transition-all active-tap flex items-center justify-center gap-2">
+                        <i class="fa-regular fa-bookmark"></i> 이 결과 저장하기
+                    </button>
+                </div>
+            </section>
+
+            <!-- ================= PAGE 05: COMPARE CONDITIONS ================= -->
+            <section id="screen-compare" class="page-screen space-y-4">
+                <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 space-y-3">
+                    <div class="flex justify-between items-center border-b border-slate-100 pb-2.5">
+                        <div>
+                            <h2 class="text-base font-bold text-slate-800">두 조건 비교하기</h2>
+                            <p class="text-xs text-slate-400">금리와 기간 차이에 따른 수익률 비교</p>
+                        </div>
+                        <span class="text-xs font-bold text-purple-600 bg-purple-50 px-2.5 py-1 rounded-full">예금 기준</span>
+                    </div>
+
+                    <!-- Side by Side Form Controls -->
+                    <div class="grid grid-cols-2 gap-3 text-xs">
+                        <!-- Condition A -->
+                        <div class="bg-slate-50 p-3 rounded-xl space-y-2 border border-slate-200">
+                            <span class="font-bold text-purple-700 block text-xs border-b border-slate-200 pb-1">조건 A</span>
+                            <div>
+                                <label class="text-[10px] text-slate-400 block">예치금</label>
+                                <input type="number" id="cmp-a-amt" value="10000000" class="w-full bg-white border border-slate-200 rounded p-1.5 font-bold text-xs">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-400 block">연 금리 (%)</label>
+                                <input type="number" step="0.1" id="cmp-a-rate" value="3.5" class="w-full bg-white border border-slate-200 rounded p-1.5 font-bold text-xs">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-400 block">기간 (개월)</label>
+                                <input type="number" id="cmp-a-months" value="12" class="w-full bg-white border border-slate-200 rounded p-1.5 font-bold text-xs">
+                            </div>
+                        </div>
+
+                        <!-- Condition B -->
+                        <div class="bg-purple-50/50 p-3 rounded-xl space-y-2 border border-purple-200">
+                            <span class="font-bold text-purple-700 block text-xs border-b border-purple-200 pb-1">조건 B</span>
+                            <div>
+                                <label class="text-[10px] text-slate-400 block">예치금</label>
+                                <input type="number" id="cmp-b-amt" value="10000000" class="w-full bg-white border border-purple-200 rounded p-1.5 font-bold text-xs">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-400 block">연 금리 (%)</label>
+                                <input type="number" step="0.1" id="cmp-b-rate" value="4.0" class="w-full bg-white border border-purple-200 rounded p-1.5 font-bold text-xs">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-400 block">기간 (개월)</label>
+                                <input type="number" id="cmp-b-months" value="12" class="w-full bg-white border border-purple-200 rounded p-1.5 font-bold text-xs">
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="calcCompare()" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl shadow-md text-xs transition-all active-tap">
+                        두 조건 실시간 비교하기
+                    </button>
+                </div>
+
+                <!-- Comparison Result Cards -->
+                <div class="grid grid-cols-2 gap-3 text-xs">
+                    <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm space-y-1.5">
+                        <span class="text-[11px] font-bold text-slate-500 block">조건 A 결과</span>
+                        <div class="text-xs text-slate-400">세후 이자</div>
+                        <div id="cmp-res-a-net" class="text-sm font-extrabold text-slate-800">296,100원</div>
+                        <div class="text-[10px] text-slate-400 pt-1 border-t border-slate-100">최종 수령: <span id="cmp-res-a-total" class="font-bold text-slate-700">10,296,100원</span></div>
+                    </div>
+
+                    <div class="bg-white p-3 rounded-2xl border border-purple-200 shadow-sm space-y-1.5 bg-purple-50/20">
+                        <span class="text-[11px] font-bold text-purple-700 block">조건 B 결과</span>
+                        <div class="text-xs text-slate-400">세후 이자</div>
+                        <div id="cmp-res-b-net" class="text-sm font-extrabold text-purple-700">338,400원</div>
+                        <div class="text-[10px] text-slate-400 pt-1 border-t border-purple-100">최종 수령: <span id="cmp-res-b-total" class="font-bold text-purple-900">10,338,400원</span></div>
+                    </div>
+                </div>
+
+                <div class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 rounded-2xl shadow-md space-y-1">
+                    <span class="text-[10px] uppercase font-bold text-purple-200">비교 요약</span>
+                    <h4 id="cmp-summary-title" class="text-sm font-bold">조건 B가 세후 42,300원 더 유리합니다!</h4>
+                    <p id="cmp-summary-desc" class="text-xs opacity-90 leading-relaxed">동일한 금액 투자 시 조건 B의 연 이자율이 0.5%p 더 높아 추가 수익이 발생합니다.</p>
+                </div>
+            </section>
+
+            <!-- ================= PAGE 06: CALCULATION HISTORY ================= -->
+            <section id="screen-history" class="page-screen space-y-4">
+                <div class="flex justify-between items-center px-1">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-800">계산 기록 목록</h2>
+                        <p class="text-xs text-slate-400">저장한 계산 결과를 확인하고 관리하세요.</p>
+                    </div>
+                    <button onclick="clearHistory()" class="text-xs text-rose-500 hover:text-rose-700 font-semibold bg-rose-50 px-2.5 py-1 rounded-lg">
+                        전체 삭제
+                    </button>
+                </div>
+
+                <!-- Category Filters -->
+                <div class="flex gap-1.5 text-xs">
+                    <button onclick="filterHistory('all')" id="hist-filter-all" class="hist-filter-btn px-3 py-1.5 rounded-full bg-indigo-600 text-white font-bold">전체</button>
+                    <button onclick="filterHistory('deposit')" id="hist-filter-deposit" class="hist-filter-btn px-3 py-1.5 rounded-full bg-white text-slate-600 border border-slate-200">예금</button>
+                    <button onclick="filterHistory('savings')" id="hist-filter-savings" class="hist-filter-btn px-3 py-1.5 rounded-full bg-white text-slate-600 border border-slate-200">적금</button>
+                    <button onclick="filterHistory('loan')" id="hist-filter-loan" class="hist-filter-btn px-3 py-1.5 rounded-full bg-white text-slate-600 border border-slate-200">대출</button>
+                </div>
+
+                <!-- History Item Cards Container -->
+                <div id="history-container" class="space-y-2.5">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Dynamic Modal Box for Toast / Confirmations -->
+        <div id="toast" class="fixed bottom-16 left-1/2 -translate-x-1/2 bg-slate-800/90 text-white text-xs px-4 py-2.5 rounded-full shadow-xl opacity-0 transition-opacity pointer-events-none z-50 flex items-center gap-2">
+            <i class="fa-solid fa-circle-check text-emerald-400"></i>
+            <span id="toast-msg">저장되었습니다.</span>
+        </div>
+
+        <!-- Bottom Navigation Bar -->
+        <nav class="bg-white border-t border-slate-200 px-3 py-2 flex justify-around items-center absolute bottom-0 left-0 right-0 z-20 shadow-lg">
+            <button onclick="navTo('home')" id="nav-home" class="nav-item flex flex-col items-center gap-0.5 text-indigo-600">
+                <i class="fa-solid fa-house text-base"></i>
+                <span class="text-[10px] font-semibold">홈</span>
+            </button>
+            <button onclick="navTo('deposit')" id="nav-deposit" class="nav-item flex flex-col items-center gap-0.5 text-slate-400 hover:text-indigo-600">
+                <i class="fa-solid fa-vault text-base"></i>
+                <span class="text-[10px] font-semibold">예금</span>
+            </button>
+            <button onclick="navTo('savings')" id="nav-savings" class="nav-item flex flex-col items-center gap-0.5 text-slate-400 hover:text-indigo-600">
+                <i class="fa-solid fa-piggy-bank text-base"></i>
+                <span class="text-[10px] font-semibold">적금</span>
+            </button>
+            <button onclick="navTo('loan')" id="nav-loan" class="nav-item flex flex-col items-center gap-0.5 text-slate-400 hover:text-indigo-600">
+                <i class="fa-solid fa-hand-holding-dollar text-base"></i>
+                <span class="text-[10px] font-semibold">대출</span>
+            </button>
+            <button onclick="navTo('compare')" id="nav-compare" class="nav-item flex flex-col items-center gap-0.5 text-slate-400 hover:text-indigo-600">
+                <i class="fa-solid fa-code-compare text-base"></i>
+                <span class="text-[10px] font-semibold">비교</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- Application Script Logic -->
+    <script>
+        // Global State & Navigation History Stack
+        let currentScreen = 'home';
+        let navHistory = ['home'];
+        let activeHistoryFilter = 'all';
+
+        // Sample initial history data if empty
+        const initialMockHistory = [
+            { id: 1, type: 'deposit', title: '예금 계산', date: '2026.11.03', amount: '10,296,100원', sub: '원금 1,000만원 · 연 3.5%' },
+            { id: 2, type: 'savings', title: '적금 계산', date: '2026.11.02', amount: '3,665,988원', sub: '월 30만원 · 연 4.0%' },
+            { id: 3, type: 'loan', title: '대출 계산', date: '2026.10.30', amount: '월 599,418원', sub: '2,000만원 · 원리금균등' }
+        ];
+
+        // Initialize local storage
+        function getHistory() {
+            const data = localStorage.getItem('fin_calc_history');
+            return data ? JSON.parse(data) : initialMockHistory;
+        }
+
+        function saveHistoryData(data) {
+            localStorage.setItem('fin_calc_history', JSON.stringify(data));
+        }
+
+        // Screen Titles Mapping
+        const screenTitles = {
+            'home': '금융 계산기',
+            'deposit': '예금 계산',
+            'savings': '적금 계산',
+            'loan': '대출 계산',
+            'compare': '조건 비교',
+            'history': '계산 기록'
+        };
+
+        // Navigation Handler
+        function navTo(screenId, pushHistory = true) {
+            if (currentScreen === screenId) return;
+
+            if (pushHistory) {
+                navHistory.push(screenId);
+            }
+
+            currentScreen = screenId;
+
+            // Update Page Visibility
+            document.querySelectorAll('.page-screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+
+            const targetScreen = document.getElementById(`screen-${screenId}`);
+            if (targetScreen) {
+                targetScreen.classList.add('active');
+            }
+
+            // Update App Header Title & Back Button
+            document.getElementById('header-title').textContent = screenTitles[screenId] || '금융 계산기';
+            const backBtn = document.getElementById('btn-back');
+            if (screenId === 'home') {
+                backBtn.classList.add('hidden');
+            } else {
+                backBtn.classList.remove('hidden');
+            }
+
+            // Update Bottom Nav Style
+            document.querySelectorAll('.nav-item').forEach(btn => {
+                btn.classList.remove('text-indigo-600');
+                btn.classList.add('text-slate-400');
+            });
+            const activeNavBtn = document.getElementById(`nav-${screenId}`);
+            if (activeNavBtn) {
+                activeNavBtn.classList.remove('text-slate-400');
+                activeNavBtn.classList.add('text-indigo-600');
+            }
+
+            // Run Screen Specific Renderers
+            if (screenId === 'home') renderHomeRecent();
+            if (screenId === 'history') renderHistoryList();
+            if (screenId === 'deposit') calcDeposit();
+            if (screenId === 'savings') calcSavings();
+            if (screenId === 'loan') calcLoan();
+            if (screenId === 'compare') calcCompare();
+        }
+
+        function goBack() {
+            if (navHistory.length > 1) {
+                navHistory.pop();
+                const previous = navHistory[navHistory.length - 1];
+                navTo(previous, false);
+            } else {
+                navTo('home', false);
+            }
+        }
+
+        // Toast Message Notification
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').textContent = msg;
+            toast.style.opacity = '1';
+            setTimeout(() => {
+                toast.style.opacity = '0';
+            }, 2000);
+        }
+
+        // Helper: Number Formatter
+        function formatNum(num) {
+            return Math.round(num).toLocaleString('ko-KR');
+        }
+
+        // Helper: Input Modifier
+        function addValue(inputId, addAmt) {
+            const el = document.getElementById(inputId);
+            const current = parseFloat(el.value) || 0;
+            el.value = current + addAmt;
+        }
+
+        // ================= FINANCIAL CALCULATIONS ================= //
+
+        // 1. Deposit Calculation Logic
+        function calcDeposit() {
+            const amount = parseFloat(document.getElementById('dep-amount').value) || 0;
+            const months = parseFloat(document.getElementById('dep-period').value) || 0;
+            const annualRate = (parseFloat(document.getElementById('dep-rate').value) || 0) / 100;
+            const isCompound = document.getElementById('dep-type').value === 'compound';
+            const taxRate = parseFloat(document.getElementById('dep-tax').value) / 100;
+
+            let grossInterest = 0;
+
+            if (!isCompound) {
+                // Simple interest formula
+                grossInterest = amount * annualRate * (months / 12);
+            } else {
+                // Monthly compound formula
+                const monthlyRate = annualRate / 12;
+                grossInterest = amount * (Math.pow(1 + monthlyRate, months) - 1);
+            }
+
+            const taxAmount = grossInterest * taxRate;
+            const netInterest = grossInterest - taxAmount;
+            const totalPayout = amount + netInterest;
+
+            // Update UI
+            document.getElementById('dep-res-total').textContent = `${formatNum(totalPayout)}원`;
+            document.getElementById('dep-res-principal').textContent = `${formatNum(amount)}원`;
+            document.getElementById('dep-res-gross').textContent = `+${formatNum(grossInterest)}원`;
+            document.getElementById('dep-res-tax').textContent = `-${formatNum(taxAmount)}원`;
+            document.getElementById('dep-res-net').textContent = `+${formatNum(netInterest)}원`;
+
+            const taxLabel = taxRate === 0 ? '비과세' : (taxRate === 0.095 ? '세금우대' : '일반과세');
+            const typeLabel = isCompound ? '월복리' : '단리';
+            document.getElementById('dep-res-summary').textContent = `${months}개월 · ${annualRate * 100}% · ${typeLabel} · ${taxLabel}`;
+        }
+
+        // 2. Savings Calculation Logic
+        function calcSavings() {
+            const monthlyAmt = parseFloat(document.getElementById('sav-amount').value) || 0;
+            const months = parseFloat(document.getElementById('sav-period').value) || 0;
+            const annualRate = (parseFloat(document.getElementById('sav-rate').value) || 0) / 100;
+            const taxRate = parseFloat(document.getElementById('sav-tax').value) / 100;
+
+            const totalPrincipal = monthlyAmt * months;
+            
+            // Standard savings interest: S = P * r * n(n+1)/(2*12)
+            const grossInterest = monthlyAmt * (annualRate / 12) * (months * (months + 1) / 2);
+            const taxAmount = grossInterest * taxRate;
+            const netInterest = grossInterest - taxAmount;
+            const totalPayout = totalPrincipal + netInterest;
+
+            document.getElementById('sav-res-total').textContent = `${formatNum(totalPayout)}원`;
+            document.getElementById('sav-res-principal').textContent = `${formatNum(totalPrincipal)}원`;
+            document.getElementById('sav-res-gross').textContent = `+${formatNum(grossInterest)}원`;
+            document.getElementById('sav-res-tax').textContent = `-${formatNum(taxAmount)}원`;
+            document.getElementById('sav-res-net').textContent = `+${formatNum(netInterest)}원`;
+        }
+
+        // 3. Loan Calculation Logic
+        function calcLoan() {
+            const principal = parseFloat(document.getElementById('loan-amount').value) || 0;
+            const months = parseFloat(document.getElementById('loan-period').value) || 0;
+            const annualRate = (parseFloat(document.getElementById('loan-rate').value) || 0) / 100;
+            const type = document.getElementById('loan-type').value;
+
+            const monthlyRate = annualRate / 12;
+            let monthlyPaymentAvg = 0;
+            let totalInterest = 0;
+
+            if (type === 'equal-principal-interest') {
+                // 원리금균등
+                if (monthlyRate > 0) {
+                    monthlyPaymentAvg = principal * (monthlyRate * Math.pow(1 + monthlyRate, months)) / (Math.pow(1 + monthlyRate, months) - 1);
+                } else {
+                    monthlyPaymentAvg = principal / months;
+                }
+                const totalPaid = monthlyPaymentAvg * months;
+                totalInterest = totalPaid - principal;
+                document.getElementById('loan-res-type-desc').textContent = '원리금균등상환 기준 (매월 동일)';
+            } else if (type === 'equal-principal') {
+                // 원금균등
+                const principalPerMonth = principal / months;
+                totalInterest = 0;
+                for (let i = 0; i < months; i++) {
+                    const remaining = principal - (principalPerMonth * i);
+                    totalInterest += remaining * monthlyRate;
+                }
+                monthlyPaymentAvg = (principal + totalInterest) / months;
+                document.getElementById('loan-res-type-desc').textContent = '원금균등상환 기준 (월평균 상환액)';
+            } else {
+                // 만기일시
+                totalInterest = principal * annualRate * (months / 12);
+                monthlyPaymentAvg = (totalInterest / months);
+                document.getElementById('loan-res-type-desc').textContent = '만기일시상환 기준 (매월 이자만 납입)';
+            }
+
+            const totalPayment = principal + totalInterest;
+
+            document.getElementById('loan-res-monthly').textContent = `${formatNum(monthlyPaymentAvg)}원`;
+            document.getElementById('loan-res-principal').textContent = `${formatNum(principal)}원`;
+            document.getElementById('loan-res-total-interest').textContent = `${formatNum(totalInterest)}원`;
+            document.getElementById('loan-res-total-payment').textContent = `${formatNum(totalPayment)}원`;
+        }
+
+        // 4. Comparison Calculation Logic
+        function calcCompare() {
+            const amtA = parseFloat(document.getElementById('cmp-a-amt').value) || 0;
+            const rateA = (parseFloat(document.getElementById('cmp-a-rate').value) || 0) / 100;
+            const monthsA = parseFloat(document.getElementById('cmp-a-months').value) || 0;
+
+            const amtB = parseFloat(document.getElementById('cmp-b-amt').value) || 0;
+            const rateB = (parseFloat(document.getElementById('cmp-b-rate').value) || 0) / 100;
+            const monthsB = parseFloat(document.getElementById('cmp-b-months').value) || 0;
+
+            // Simple deposit comparison with 15.4% standard tax
+            const grossA = amtA * rateA * (monthsA / 12);
+            const netA = grossA * (1 - 0.154);
+            const totalA = amtA + netA;
+
+            const grossB = amtB * rateB * (monthsB / 12);
+            const netB = grossB * (1 - 0.154);
+            const totalB = amtB + netB;
+
+            document.getElementById('cmp-res-a-net').textContent = `${formatNum(netA)}원`;
+            document.getElementById('cmp-res-a-total').textContent = `${formatNum(totalA)}원`;
+
+            document.getElementById('cmp-res-b-net').textContent = `${formatNum(netB)}원`;
+            document.getElementById('cmp-res-b-total').textContent = `${formatNum(totalB)}원`;
+
+            const diffNet = Math.abs(netA - netB);
+            const titleEl = document.getElementById('cmp-summary-title');
+            const descEl = document.getElementById('cmp-summary-desc');
+
+            if (netB > netA) {
+                titleEl.textContent = `조건 B가 세후 ${formatNum(diffNet)}원 더 유리합니다!`;
+                descEl.textContent = `동일한 조건 비교 결과, 조건 B를 선택할 때 이자 수익이 더 높게 나타납니다.`;
+            } else if (netA > netB) {
+                titleEl.textContent = `조건 A가 세후 ${formatNum(diffNet)}원 더 유리합니다!`;
+                descEl.textContent = `동일한 조건 비교 결과, 조건 A를 선택할 때 이자 수익이 더 높게 나타납니다.`;
+            } else {
+                titleEl.textContent = `두 조건의 예상 수익이 동일합니다.`;
+                descEl.textContent = `두 조건 모두 동일한 세후 이자 수익을 제공합니다.`;
+            }
+        }
+
+        // ================= SAVE & HISTORY SYSTEM ================= //
+
+        function saveCurrentResult(type) {
+            const list = getHistory();
+            const now = new Date();
+            const dateStr = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}`;
+
+            let newItem = {};
+
+            if (type === 'deposit') {
+                const total = document.getElementById('dep-res-total').textContent;
+                const amount = document.getElementById('dep-amount').value;
+                const rate = document.getElementById('dep-rate').value;
+                newItem = {
+                    id: Date.now(),
+                    type: 'deposit',
+                    title: '예금 계산',
+                    date: dateStr,
+                    amount: total,
+                    sub: `원금 ${formatNum(amount)}원 · 연 ${rate}%`
+                };
+            } else if (type === 'savings') {
+                const total = document.getElementById('sav-res-total').textContent;
+                const amount = document.getElementById('sav-amount').value;
+                const rate = document.getElementById('sav-rate').value;
+                newItem = {
+                    id: Date.now(),
+                    type: 'savings',
+                    title: '적금 계산',
+                    date: dateStr,
+                    amount: total,
+                    sub: `월 ${formatNum(amount)}원 · 연 ${rate}%`
+                };
+            } else if (type === 'loan') {
+                const monthly = document.getElementById('loan-res-monthly').textContent;
+                const amount = document.getElementById('loan-amount').value;
+                newItem = {
+                    id: Date.now(),
+                    type: 'loan',
+                    title: '대출 계산',
+                    date: dateStr,
+                    amount: `월 ${monthly}`,
+                    sub: `대출 ${formatNum(amount)}원 · 원리금균등`
+                };
+            }
+
+            list.unshift(newItem);
+            saveHistoryData(list);
+            showToast('계산 결과가 기록에 저장되었습니다!');
+        }
+
+        function deleteHistoryItem(id) {
+            let list = getHistory();
+            list = list.filter(item => item.id !== id);
+            saveHistoryData(list);
+            renderHistoryList();
+            renderHomeRecent();
+            showToast('기록이 삭제되었습니다.');
+        }
+
+        function clearHistory() {
+            saveHistoryData([]);
+            renderHistoryList();
+            renderHomeRecent();
+            showToast('전체 기록이 삭제되었습니다.');
+        }
+
+        function filterHistory(category) {
+            activeHistoryFilter = category;
+            document.querySelectorAll('.hist-filter-btn').forEach(btn => {
+                btn.classList.remove('bg-indigo-600', 'text-white', 'font-bold');
+                btn.classList.add('bg-white', 'text-slate-600', 'border', 'border-slate-200');
+            });
+            const activeBtn = document.getElementById(`hist-filter-${category}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('bg-white', 'text-slate-600', 'border', 'border-slate-200');
+                activeBtn.classList.add('bg-indigo-600', 'text-white', 'font-bold');
+            }
+            renderHistoryList();
+        }
+
+        function renderHistoryList() {
+            const container = document.getElementById('history-container');
+            let list = getHistory();
+
+            if (activeHistoryFilter !== 'all') {
+                list = list.filter(item => item.type === activeHistoryFilter);
+            }
+
+            if (list.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-10 text-slate-400 bg-white rounded-2xl border border-slate-100">
+                        <i class="fa-regular fa-folder-open text-3xl mb-2 opacity-50"></i>
+                        <p class="text-xs">저장된 계산 기록이 없습니다.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = list.map(item => {
+                const iconMap = {
+                    deposit: { icon: 'fa-vault', color: 'bg-indigo-50 text-indigo-600' },
+                    savings: { icon: 'fa-piggy-bank', color: 'bg-emerald-50 text-emerald-600' },
+                    loan: { icon: 'fa-hand-holding-dollar', color: 'bg-amber-50 text-amber-600' }
+                };
+                const style = iconMap[item.type] || iconMap.deposit;
+
+                return `
+                    <div class="bg-white p-3.5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl ${style.color} flex items-center justify-center text-lg font-bold">
+                                <i class="fa-solid ${style.icon}"></i>
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <span class="font-bold text-xs text-slate-800">${item.title}</span>
+                                    <span class="text-[10px] text-slate-400">${item.date}</span>
+                                </div>
+                                <div class="text-sm font-black text-slate-900 mt-0.5">${item.amount}</div>
+                                <div class="text-[10px] text-slate-400">${item.sub}</div>
+                            </div>
+                        </div>
+                        <button onclick="deleteHistoryItem(${item.id})" class="text-slate-300 hover:text-rose-500 p-2 text-sm transition-colors">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderHomeRecent() {
+            const container = document.getElementById('home-recent-list');
+            const list = getHistory().slice(0, 2); // Show top 2
+
+            if (list.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-4 text-slate-400 bg-white rounded-xl text-xs border border-slate-100">
+                        최근 저장 내역이 없습니다.
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = list.map(item => {
+                const iconMap = {
+                    deposit: { icon: 'fa-vault', color: 'bg-indigo-50 text-indigo-600' },
+                    savings: { icon: 'fa-piggy-bank', color: 'bg-emerald-50 text-emerald-600' },
+                    loan: { icon: 'fa-hand-holding-dollar', color: 'bg-amber-50 text-amber-600' }
+                };
+                const style = iconMap[item.type] || iconMap.deposit;
+
+                return `
+                    <div onclick="navTo('${item.type}')" class="bg-white p-3 rounded-xl border border-slate-100 flex items-center justify-between cursor-pointer hover:shadow-sm">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-lg ${style.color} flex items-center justify-center text-sm font-bold">
+                                <i class="fa-solid ${style.icon}"></i>
+                            </div>
+                            <div>
+                                <div class="text-[10px] text-slate-400">${item.title} · ${item.date}</div>
+                                <div class="text-xs font-bold text-slate-800">${item.amount}</div>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-slate-300 text-xs"></i>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Initialize App on Load
+        window.onload = function() {
+            renderHomeRecent();
+            calcDeposit();
+        };
+    </script>
+</body>
+</html>
