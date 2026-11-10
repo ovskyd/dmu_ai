@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>스마트 금융 계산기 & 마이페이지</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Apple SD Gothic Neo', 'Malgun Gothic', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .page-screen { display: none; opacity: 0; transform: translateY(8px); transition: opacity 0.25s ease, transform 0.25s ease; }
+        .page-screen.active { display: block; opacity: 1; transform: translateY(0); }
+        .active-tap:active { transform: scale(0.98); }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-800 font-sans min-h-screen flex items-center justify-center p-0">
+
+    <!-- Mobile Screen Shell -->
+    <div class="w-full max-w-md h-screen bg-slate-50 shadow-2xl flex flex-col overflow-hidden relative border-0">
+
+        <!-- App Header Bar -->
+        <header id="app-header" class="bg-gradient-to-r from-indigo-700 via-indigo-600 to-violet-600 text-white px-5 py-3 flex items-center justify-between shadow-md shrink-0 z-10">
+            <div class="flex items-center gap-3">
+                <div>
+                    <span class="text-[10px] tracking-widest uppercase text-indigo-200 font-bold block leading-none">MY FINANCE TOOL</span>
+                    <h1 id="header-title" class="text-lg font-bold tracking-tight leading-tight">금융 계산기</h1>
+                </div>
+            </div>
+            <!-- Dynamic Auth Button in Header -->
+            <div id="header-user-status">
+                <button onclick="openAuthModal('login')" class="bg-white/20 hover:bg-white/30 text-white text-xs px-3 py-1.5 rounded-full backdrop-blur-md transition-all font-semibold active-tap">
+                    로그인
+                </button>
+            </div>
+        </header>
+
+        <!-- Dynamic Main Content Area -->
+        <main class="flex-1 overflow-y-auto no-scrollbar p-4 space-y-4 relative">
+
+            <!-- ================= PAGE 01: HOME ================= -->
+            <section id="screen-home" class="page-screen active space-y-4">
+                <div class="bg-gradient-to-br from-indigo-600 to-violet-700 text-white rounded-2xl p-5 shadow-lg relative overflow-hidden">
+                    <div class="absolute -right-4 -bottom-4 w-28 h-28 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+                    <span class="inline-block bg-white/20 text-indigo-100 text-[10px] font-semibold px-2.5 py-0.5 rounded-full mb-2">사회초년생 맞춤 도구</span>
+                    <h2 class="text-xl font-extrabold mb-1">복잡한 금융, 세후 수령액으로 비교하세요</h2>
+                    <p class="text-xs text-indigo-100 leading-relaxed opacity-90">표시 금리에 속지 말고 진짜 내 통장에 들어오는 세후 이자와 대출 상환액을 한눈에 파악하세요.</p>
+                </div>
+
+                <div class="space-y-2.5">
+                    <h3 class="text-sm font-bold text-slate-700 px-1 flex items-center gap-1.5">
+                        <i class="fa-solid fa-calculator text-indigo-600"></i> 어떤 계산을 시작할까요?
+                    </h3>
+                    
+                    <div onclick="navTo('savings')" class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex items-center justify-between cursor-pointer active-tap group">
+                        <div class="flex items-center gap-3.5">
+                            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl font-bold group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                                <i class="fa-solid fa-piggy-bank"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-800 text-sm">저축 계산 (예금 / 적금)</h4>
+                                <p class="text-xs text-slate-400 mt-0.5">목돈 굴리기 & 매월 차곡차곡 모으기</p>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-slate-300 group-hover:text-emerald-600 transition-colors text-sm"></i>
+                    </div>
+
+                    <div onclick="navTo('loan')" class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex items-center justify-between cursor-pointer active-tap group">
+                        <div class="flex items-center gap-3.5">
+                            <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl font-bold group-hover:bg-amber-600 group-hover:text-white transition-colors">
+                                <i class="fa-solid fa-hand-holding-dollar"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-800 text-sm">대출 상환 계산</h4>
+                                <p class="text-xs text-slate-400 mt-0.5">월 상환 원리금 및 총 이자 부담 파악</p>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-slate-300 group-hover:text-amber-600 transition-colors text-sm"></i>
+                    </div>
+
+                    <div onclick="navTo('mypage')" class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex items-center justify-between cursor-pointer active-tap group">
+                        <div class="flex items-center gap-3.5">
+                            <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl font-bold group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                                <i class="fa-solid fa-user"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-800 text-sm">마이페이지 & 조건 비교</h4>
+                                <p class="text-xs text-slate-400 mt-0.5">저장된 내 계산 기록 및 실시간 조건 비교</p>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-slate-300 group-hover:text-purple-600 transition-colors text-sm"></i>
+                    </div>
+                </div>
+
+                <!-- Recent Saved Activity Preview (Auth-Gated) -->
+                <div class="space-y-2 pt-2">
+                    <div class="flex justify-between items-center px-1">
+                        <h3 class="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+                            <i class="fa-solid fa-clock-rotate-left text-slate-500"></i> 최근 저장한 계산
+                        </h3>
+                        <button id="home-view-all-btn" onclick="navTo('mypage')" class="hidden text-xs text-indigo-600 font-semibold hover:underline">전체보기</button>
+                    </div>
+
+                    <div id="home-recent-list" class="space-y-2">
+                        <!-- Populated via JS based on login status -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= PAGE 02: SAVINGS (DEPOSIT + SAVINGS TABS) ================= -->
+            <section id="screen-savings" class="page-screen space-y-4">
+                <div class="flex bg-slate-200 p-1 rounded-xl text-xs font-bold">
+                    <button id="tab-btn-deposit" onclick="switchSavingsTab('deposit')" class="flex-1 py-2 rounded-lg bg-white text-indigo-700 shadow-sm transition-all">예금 (목돈 굴리기)</button>
+                    <button id="tab-btn-savings" onclick="switchSavingsTab('savings')" class="flex-1 py-2 rounded-lg text-slate-600 transition-all">적금 (매월 모으기)</button>
+                </div>
+
+                <!-- Deposit Form Area -->
+                <div id="area-deposit-form" class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 space-y-4">
+                    <div class="border-b border-slate-100 pb-2.5">
+                        <h2 class="text-base font-bold text-slate-800">예금 조건 입력</h2>
+                        <p class="text-xs text-slate-400">예치할 거치 금액과 기간, 연 이자율을 입력해 주세요.</p>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">예치 금액</label>
+                            <div class="relative">
+                                <input type="number" id="dep-amount" value="10000000" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-800 focus:outline-none focus:border-indigo-500 focus:bg-white pr-10">
+                                <span class="absolute right-3.5 top-2.5 text-xs font-medium text-slate-400">원</span>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">예치 기간</label>
+                                <div class="relative">
+                                    <input type="number" id="dep-period" value="12" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-800 focus:outline-none focus:border-indigo-500 focus:bg-white pr-12">
+                                    <span class="absolute right-3.5 top-2.5 text-xs font-medium text-slate-400">개월</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">연 이자율</label>
+                                <div class="relative">
+                                    <input type="number" step="0.1" id="dep-rate" value="3.5" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-800 focus:outline-none focus:border-indigo-500 focus:bg-white pr-8">
+                                    <span class="absolute right-3.5 top-2.5 text-xs font-medium text-slate-400">%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="calcDeposit()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl shadow-lg text-sm transition-all active-tap">
+                        예금 계산하기
+                    </button>
+
+                    <div id="dep-result-card" class="bg-indigo-50/50 p-3.5 rounded-xl border border-indigo-100 space-y-2 text-xs">
+                        <div class="flex justify-between items-center"><span class="text-slate-500">세후 예상 수령액</span><span id="dep-res-total" class="text-base font-extrabold text-indigo-900">10,296,100원</span></div>
+                        <div class="flex justify-between"><span class="text-slate-500">세전 이자</span><span id="dep-res-gross" class="font-semibold text-emerald-600">+350,000원</span></div>
+                        <div class="flex justify-between"><span class="text-slate-500">이자 과세 (15.4%)</span><span id="dep-res-tax" class="font-semibold text-rose-500">-53,900원</span></div>
+                        <button onclick="saveCurrentResult('deposit')" class="w-full mt-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg text-xs active-tap">
+                            <i class="fa-regular fa-bookmark"></i> 이 결과 마이페이지에 저장하기
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Savings Form Area -->
+                <div id="area-savings-form" class="hidden bg-white rounded-2xl p-4 shadow-sm border border-slate-100 space-y-4">
+                    <div class="border-b border-slate-100 pb-2.5">
+                        <h2 class="text-base font-bold text-slate-800">적금 조건 입력</h2>
+                        <p class="text-xs text-slate-400">매월 납입할 저축 금액과 기간, 금리를 입력하세요.</p>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">월 납입 금액</label>
+                            <div class="relative">
+                                <input type="number" id="sav-amount" value="300000" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-800 focus:outline-none focus:border-emerald-500 pr-10">
+                                <span class="absolute right-3.5 top-2.5 text-xs font-medium text-slate-400">원</span>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">저축 기간</label>
+                                <div class="relative">
+                                    <input type="number" id="sav-period" value="12" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-800 focus:outline-none pr-12">
+                                    <span class="absolute right-3.5 top-2.5 text-xs font-medium text-slate-400">개월</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">연 이자율</label>
+                                <div class="relative">
+                                    <input type="number" step="0.1" id="sav-rate" value="4.0" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-800 focus:outline-none pr-8">
+                                    <span class="absolute right-3.5 top-2.5 text-xs font-medium text-slate-400">%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="calcSavings()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl shadow-lg text-sm transition-all active-tap">
+                        적금 계산하기
+                    </button>
+
+                    <div id="sav-result-card" class="bg-emerald-50/50 p-3.5 rounded-xl border border-emerald-100 space-y-2 text-xs">
+                        <div class="flex justify-between items-center"><span class="text-slate-500">세후 예상 수령액</span><span id="sav-res-total" class="text-base font-extrabold text-emerald-900">3,665,988원</span></div>
+                        <div class="flex justify-between"><span class="text-slate-500">총 원금</span><span id="sav-res-principal" class="font-semibold text-slate-800">3,600,000원</span></div>
+                        <div class="flex justify-between"><span class="text-slate-500">세후 이자</span><span id="sav-res-net" class="font-semibold text-emerald-600">+65,988원</span></div>
+                        <button onclick="saveCurrentResult('savings')" class="w-full mt-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg text-xs active-tap">
+                            <i class="fa-regular fa-bookmark"></i> 이 결과 마이페이지에 저장하기
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= PAGE 03: LOAN CALCULATOR ================= -->
+            <section id="screen-loan" class="page-screen space-y-4">
+                <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 space-y-4">
+                    <div class="border-b border-slate-100 pb-2.5">
+                        <h2 class="text-base font-bold text-slate-800">대출 조건 입력</h2>
+                        <p class="text-xs text-slate-400">대출 금액과 기간, 상환 방식을 입력해 주세요.</p>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">대출 금액</label>
+                            <div class="relative">
+                                <input type="number" id="loan-amount" value="20000000" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-800 focus:outline-none focus:border-amber-500 pr-10">
+                                <span class="absolute right-3.5 top-2.5 text-xs font-medium text-slate-400">원</span>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">대출 기간</label>
+                                <div class="relative">
+                                    <input type="number" id="loan-period" value="36" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-800 focus:outline-none pr-12">
+                                    <span class="absolute right-3.5 top-2.5 text-xs font-medium text-slate-400">개월</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">연 이자율</label>
+                                <div class="relative">
+                                    <input type="number" step="0.1" id="loan-rate" value="5.0" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-800 focus:outline-none pr-8">
+                                    <span class="absolute right-3.5 top-2.5 text-xs font-medium text-slate-400">%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">상환 방식</label>
+                            <select id="loan-type" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700">
+                                <option value="equal-principal-interest">원리금균등상환</option>
+                                <option value="equal-principal">원금균등상환</option>
+                                <option value="bullet">만기일시상환</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button onclick="calcLoan()" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3.5 rounded-xl shadow-lg text-sm transition-all active-tap">
+                        대출 상환액 계산하기
+                    </button>
+
+                    <div id="loan-result-card" class="bg-amber-50/50 p-3.5 rounded-xl border border-amber-100 space-y-2 text-xs">
+                        <div class="flex justify-between items-center"><span class="text-slate-500">월 평균 상환액</span><span id="loan-res-monthly" class="text-base font-extrabold text-amber-900">599,418원</span></div>
+                        <div class="flex justify-between"><span class="text-slate-500">대출 원금</span><span id="loan-res-principal" class="font-semibold text-slate-800">20,000,000원</span></div>
+                        <div class="flex justify-between"><span class="text-slate-500">총 이자 비용</span><span id="loan-res-total-interest" class="font-semibold text-rose-500">1,579,046원</span></div>
+                        <button onclick="saveCurrentResult('loan')" class="w-full mt-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg text-xs active-tap">
+                            <i class="fa-regular fa-bookmark"></i> 이 결과 마이페이지에 저장하기
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= PAGE 04: MYPAGE & COMPARISON ================= -->
+            <section id="screen-mypage" class="page-screen space-y-4">
+                
+                <!-- User Profile Card -->
+                <div id="mypage-user-card" class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex items-center justify-between">
+                    <!-- Javascript will render Login Prompt or User Profile -->
+                </div>
+
+                <!-- Sub Navigation inside Mypage -->
+                <div class="flex bg-slate-200 p-1 rounded-xl text-xs font-bold">
+                    <button id="mypage-tab-btn-history" onclick="switchMypageTab('history')" class="flex-1 py-2 rounded-lg bg-white text-indigo-700 shadow-sm transition-all">내 계산 기록</button>
+                    <button id="mypage-tab-btn-compare" onclick="switchMypageTab('compare')" class="flex-1 py-2 rounded-lg text-slate-600 transition-all">조건 실시간 비교</button>
+                </div>
+
+                <!-- Auth-Gated Guard Banner for Non-Logged Users -->
+                <div id="mypage-auth-lock-card" class="hidden bg-gradient-to-br from-indigo-900 via-slate-900 to-violet-950 text-white rounded-2xl p-5 shadow-lg space-y-3 text-center relative overflow-hidden">
+                    <div class="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mx-auto text-xl text-indigo-300 border border-white/10">
+                        <i class="fa-solid fa-lock"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm">로그인이 필요한 기능입니다</h3>
+                        <p class="text-[11px] text-slate-300 mt-1 leading-relaxed">
+                            계산 결과 기록 저장 및 2가지 이상 금융 조건의 실시간 비교 기능은 로그인 후 이용하실 수 있습니다.
+                        </p>
+                    </div>
+                    <button onclick="openAuthModal('login')" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl text-xs shadow-md transition-all active-tap flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-right-to-bracket"></i> 1초만에 로그인/회원가입하기
+                    </button>
+                </div>
+
+                <!-- Area 1: Calculation History -->
+                <div id="area-mypage-history" class="space-y-3">
+                    <div class="flex justify-between items-center px-1">
+                        <h3 class="text-sm font-bold text-slate-700">저장된 계산 결과 목록</h3>
+                        <button onclick="clearHistory()" class="text-xs text-rose-500 font-semibold hover:underline">전체 삭제</button>
+                    </div>
+                    <div id="history-container" class="space-y-2.5">
+                        <!-- History List Rendered by JS -->
+                    </div>
+                </div>
+
+                <!-- Area 2: Live Condition Comparison -->
+                <div id="area-mypage-compare" class="hidden space-y-4">
+                    <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 space-y-3 text-xs">
+                        <h3 class="font-bold text-slate-800 border-b border-slate-100 pb-2">예금 조건 A vs B 직접 비교</h3>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200 space-y-1.5">
+                                <span class="font-bold text-slate-700 block">조건 A</span>
+                                <input type="number" id="cmp-a-amt" value="10000000" class="w-full p-1 border rounded font-bold">
+                                <input type="number" step="0.1" id="cmp-a-rate" value="3.5" class="w-full p-1 border rounded font-bold">
+                            </div>
+                            <div class="bg-purple-50/50 p-2.5 rounded-xl border border-purple-200 space-y-1.5">
+                                <span class="font-bold text-purple-700 block">조건 B</span>
+                                <input type="number" id="cmp-b-amt" value="10000000" class="w-full p-1 border rounded font-bold">
+                                <input type="number" step="0.1" id="cmp-b-rate" value="4.0" class="w-full p-1 border rounded font-bold">
+                            </div>
+                        </div>
+                        <button onclick="calcCompare()" class="w-full bg-purple-600 text-white font-bold py-2.5 rounded-xl">실시간 비교 결과 계산</button>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm space-y-3">
+                        <h4 class="text-xs font-bold text-slate-700">세후 이자 비교 그래프</h4>
+                        <div class="space-y-2">
+                            <div>
+                                <div class="flex justify-between text-xs mb-1"><span>조건 A</span><span id="cmp-chart-a-val" class="font-bold">296,100원</span></div>
+                                <div class="h-3 bg-slate-100 rounded-full overflow-hidden"><div id="cmp-chart-a-bar" class="h-full bg-indigo-500" style="width: 87%"></div></div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-xs mb-1"><span class="text-purple-700 font-bold">조건 B</span><span id="cmp-chart-b-val" class="font-bold text-purple-700">338,400원</span></div>
+                                <div class="h-3 bg-purple-100 rounded-full overflow-hidden"><div id="cmp-chart-b-bar" class="h-full bg-purple-600" style="width: 100%"></div></div>
+                            </div>
+                        </div>
+                        <div id="cmp-summary-box" class="bg-purple-50 text-purple-900 p-3 rounded-xl text-xs font-semibold text-center">
+                            조건 B가 세후 42,300원 더 유리합니다!
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Privacy Policy & Terms Link Footer Section -->
+                <div class="pt-4 border-t border-slate-200 text-center space-y-2">
+                    <button onclick="openPrivacyModal()" class="text-xs text-slate-500 hover:text-indigo-600 font-medium underline flex items-center justify-center gap-1.5 mx-auto">
+                        <i class="fa-solid fa-shield-halved text-slate-400"></i> 개인정보 처리방침 및 이용약관
+                    </button>
+                    <p class="text-[10px] text-slate-400">© MY FINANCE TOOL. All rights reserved.</p>
+                </div>
+
+            </section>
+
+        </main>
+
+        <!-- Privacy Policy Modal -->
+        <div id="privacy-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+            <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-5 space-y-4 relative max-h-[80vh] flex flex-col">
+                <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                    <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-file-contract text-indigo-600"></i> 개인정보 처리방침
+                    </h3>
+                    <button onclick="closePrivacyModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                        <i class="fa-solid fa-xmark text-lg"></i>
+                    </button>
+                </div>
+
+                <div class="flex-1 overflow-y-auto space-y-3.5 text-xs text-slate-600 pr-1 leading-relaxed">
+                    <div class="bg-indigo-50 p-3 rounded-xl border border-indigo-100 text-indigo-950 font-medium">
+                        💡 <strong>데모 서비스 안내:</strong> 본 서비스는 실제 개인정보를 외부 서버로 전송하거나 보관하지 않으며, 모든 입력 및 로그인 데이터는 사용자의 브라우저(LocalStorage)에만 안전하게 저장됩니다.
+                    </div>
+
+                    <div class="space-y-1">
+                        <h4 class="font-bold text-slate-800 text-xs">1. 개인정보 수집 항목</h4>
+                        <p class="text-[11px] text-slate-500">• 회원가입 시: 닉네임(이름), 이메일 주소, 비밀번호(로컬 저장)</p>
+                        <p class="text-[11px] text-slate-500">• 서비스 이용 시: 예금/적금/대출 계산 조건 및 저장된 결과 기록</p>
+                    </div>
+
+                    <div class="space-y-1">
+                        <h4 class="font-bold text-slate-800 text-xs">2. 수집 및 이용 목적</h4>
+                        <p class="text-[11px] text-slate-500">• 사용자 계산 내역의 기기 내 저장 및 마이페이지 기록 관리</p>
+                        <p class="text-[11px] text-slate-500">• 세후 수령액 및 대출 상환 조건의 실시간 비교 기능 제공</p>
+                    </div>
+
+                    <div class="space-y-1">
+                        <h4 class="font-bold text-slate-800 text-xs">3. 데이터 파기 및 관리</h4>
+                        <p class="text-[11px] text-slate-500">• 사용자가 [로그아웃] 또는 [전체 삭제]를 클릭하거나 브라우저 저장소를 초기화하면 모든 기록이 즉시 삭제됩니다.</p>
+                    </div>
+
+                    <div class="space-y-1">
+                        <h4 class="font-bold text-slate-800 text-xs">4. 금융 계산 오차 관련 책임 한계</h4>
+                        <p class="text-[11px] text-slate-500">• 본 계산기는 단순 참고용이며, 각 금융기관의 우대금리, 공제 조건, 실제 대출 실행일의 날짜 계산 방식에 따라 세후 금액 및 상환액에 오차가 있을 수 있습니다.</p>
+                    </div>
+                </div>
+
+                <div class="pt-2 border-t border-slate-100">
+                    <button onclick="closePrivacyModal()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 rounded-xl text-xs transition-all">
+                        확인 및 닫기
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Auth Modal (Login / Signup) -->
+        <div id="auth-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+            <div class="bg-white w-full max-w-xs rounded-2xl shadow-2xl p-5 space-y-4 relative">
+                <button onclick="closeAuthModal()" class="absolute right-4 top-4 text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+
+                <!-- Login Form Mode -->
+                <div id="modal-mode-login" class="space-y-4">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-800">반가워요! 로그인</h3>
+                        <p class="text-xs text-slate-400">내 계산 기록을 안전하게 보관하세요.</p>
+                    </div>
+                    <form onsubmit="handleAuthSubmit(event, 'login')" class="space-y-2.5">
+                        <input type="email" id="login-email" required placeholder="이메일 주소" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs">
+                        <input type="password" id="login-pw" required placeholder="비밀번호" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs">
+                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-xs transition-all">로그인하기</button>
+                    </form>
+                    <div class="text-center text-[11px] text-slate-400 pt-1">
+                        계정이 없으신가요? <button onclick="toggleAuthMode('signup')" class="text-indigo-600 font-bold underline">회원가입</button>
+                    </div>
+                </div>
+
+                <!-- Signup Form Mode -->
+                <div id="modal-mode-signup" class="space-y-4 hidden">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-800">회원가입</h3>
+                        <p class="text-xs text-slate-400">1초만에 가입하고 금융 관리를 시작하세요.</p>
+                    </div>
+                    <form onsubmit="handleAuthSubmit(event, 'signup')" class="space-y-2.5">
+                        <input type="text" id="signup-name" required placeholder="이름 (닉네임)" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs">
+                        <input type="email" id="signup-email" required placeholder="이메일 주소" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs">
+                        <input type="password" id="signup-pw" required placeholder="비밀번호" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs">
+                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition-all">가입 완료하기</button>
+                    </form>
+                    <div class="text-center text-[11px] text-slate-400 pt-1">
+                        이미 계정이 있으신가요? <button onclick="toggleAuthMode('login')" class="text-indigo-600 font-bold underline">로그인</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notification -->
+        <div id="toast" class="fixed bottom-16 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-4 py-2.5 rounded-full shadow-xl opacity-0 transition-opacity pointer-events-none z-50 flex items-center gap-2">
+            <i class="fa-solid fa-circle-check text-emerald-400"></i>
+            <span id="toast-msg">저장되었습니다.</span>
+        </div>
+
+        <!-- Bottom Navigation Bar (Flexbox shrink-0 anchored at bottom) -->
+        <nav class="bg-white border-t border-slate-200 px-3 py-2.5 flex justify-around items-center shrink-0 z-20 shadow-lg">
+            <button onclick="navTo('home')" id="nav-home" class="nav-item flex flex-col items-center gap-0.5 text-indigo-600">
+                <i class="fa-solid fa-house text-base"></i>
+                <span class="text-[10px] font-semibold">홈</span>
+            </button>
+            <button onclick="navTo('savings')" id="nav-savings" class="nav-item flex flex-col items-center gap-0.5 text-slate-400 hover:text-indigo-600">
+                <i class="fa-solid fa-piggy-bank text-base"></i>
+                <span class="text-[10px] font-semibold">저축</span>
+            </button>
+            <button onclick="navTo('loan')" id="nav-loan" class="nav-item flex flex-col items-center gap-0.5 text-slate-400 hover:text-indigo-600">
+                <i class="fa-solid fa-hand-holding-dollar text-base"></i>
+                <span class="text-[10px] font-semibold">대출</span>
+            </button>
+            <button onclick="navTo('mypage')" id="nav-mypage" class="nav-item flex flex-col items-center gap-0.5 text-slate-400 hover:text-indigo-600">
+                <i class="fa-solid fa-user text-base"></i>
+                <span class="text-[10px] font-semibold">마이페이지</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- Application Core Script -->
+    <script>
+        let currentScreen = 'home';
+        let currentUser = JSON.parse(localStorage.getItem('fin_calc_user')) || null;
+        let currentMypageTab = 'history';
+
+        const initialMockHistory = [
+            { id: 1, type: 'deposit', title: '예금 계산', date: '2026.11.03', amount: '10,296,100원', sub: '원금 1,000만원 · 연 3.5%' },
+            { id: 2, type: 'savings', title: '적금 계산', date: '2026.11.02', amount: '3,665,988원', sub: '월 30만원 · 연 4.0%' }
+        ];
+
+        function getHistory() {
+            const data = localStorage.getItem('fin_calc_history');
+            return data ? JSON.parse(data) : initialMockHistory;
+        }
+
+        function saveHistoryData(data) {
+            localStorage.setItem('fin_calc_history', JSON.stringify(data));
+        }
+
+        function getUsersDB() {
+            const users = localStorage.getItem('fin_calc_users');
+            return users ? JSON.parse(users) : [];
+        }
+
+        function saveUsersDB(users) {
+            localStorage.setItem('fin_calc_users', JSON.stringify(users));
+        }
+
+        function navTo(screenId) {
+            currentScreen = screenId;
+            document.querySelectorAll('.page-screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(`screen-${screenId}`).classList.add('active');
+
+            const titles = { 'home':'금융 계산기', 'savings':'저축 계산', 'loan':'대출 계산', 'mypage':'마이페이지 & 내 기록' };
+            document.getElementById('header-title').textContent = titles[screenId];
+
+            document.querySelectorAll('.nav-item').forEach(b => {
+                b.classList.remove('text-indigo-600');
+                b.classList.add('text-slate-400');
+            });
+            const activeNav = document.getElementById(`nav-${screenId}`);
+            if(activeNav) {
+                activeNav.classList.remove('text-slate-400');
+                activeNav.classList.add('text-indigo-600');
+            }
+
+            if (screenId === 'home') renderHomeRecent();
+            if (screenId === 'mypage') renderMypage();
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').textContent = msg;
+            toast.style.opacity = '1';
+            setTimeout(() => { toast.style.opacity = '0'; }, 2000);
+        }
+
+        function formatNum(num) { return Math.round(num).toLocaleString('ko-KR'); }
+
+        function updateHeaderAuthUI() {
+            const container = document.getElementById('header-user-status');
+            if (currentUser) {
+                container.innerHTML = `
+                    <button onclick="handleLogout()" class="bg-white/10 hover:bg-white/20 text-indigo-100 text-[11px] px-2.5 py-1 rounded-full border border-white/20">
+                        로그아웃
+                    </button>
+                `;
+            } else {
+                container.innerHTML = `
+                    <button onclick="openAuthModal('login')" class="bg-white/20 hover:bg-white/30 text-white text-xs px-3 py-1.5 rounded-full backdrop-blur-md transition-all font-semibold active-tap">
+                        로그인
+                    </button>
+                `;
+            }
+        }
+
+        function openAuthModal(mode) {
+            toggleAuthMode(mode);
+            document.getElementById('auth-modal').classList.remove('hidden');
+        }
+
+        function closeAuthModal() {
+            document.getElementById('auth-modal').classList.add('hidden');
+        }
+
+        function openPrivacyModal() {
+            document.getElementById('privacy-modal').classList.remove('hidden');
+        }
+
+        function closePrivacyModal() {
+            document.getElementById('privacy-modal').classList.add('hidden');
+        }
+
+        function toggleAuthMode(mode) {
+            if (mode === 'login') {
+                document.getElementById('modal-mode-login').classList.remove('hidden');
+                document.getElementById('modal-mode-signup').classList.add('hidden');
+            } else {
+                document.getElementById('modal-mode-login').classList.add('hidden');
+                document.getElementById('modal-mode-signup').classList.remove('hidden');
+            }
+        }
+
+        function handleAuthSubmit(event, type) {
+            event.preventDefault();
+            const users = getUsersDB();
+
+            if (type === 'signup') {
+                const name = document.getElementById('signup-name').value.trim();
+                const email = document.getElementById('signup-email').value.trim();
+                const pw = document.getElementById('signup-pw').value;
+
+                const existingUser = users.find(u => u.email === email);
+                if (existingUser) {
+                    showToast('이미 가입된 이메일입니다. 로그인해 주세요.');
+                    toggleAuthMode('login');
+                    document.getElementById('login-email').value = email;
+                    return;
+                }
+
+                const newUser = { name, email, pw };
+                users.push(newUser);
+                saveUsersDB(users);
+
+                currentUser = { name, email };
+                localStorage.setItem('fin_calc_user', JSON.stringify(currentUser));
+                showToast(`${name}님, 회원가입 완료 및 로그인되었습니다!`);
+                closeAuthModal();
+                updateHeaderAuthUI();
+                renderHomeRecent();
+                if (currentScreen === 'mypage') renderMypage();
+
+            } else {
+                const email = document.getElementById('login-email').value.trim();
+                const pw = document.getElementById('login-pw').value;
+
+                const matchedUser = users.find(u => u.email === email);
+
+                if (!matchedUser) {
+                    showToast('가입되지 않은 계정입니다. 회원가입을 먼저 진행해주세요.');
+                    toggleAuthMode('signup');
+                    document.getElementById('signup-email').value = email;
+                    return;
+                }
+
+                if (matchedUser.pw !== pw) {
+                    showToast('비밀번호가 일치하지 않습니다. 다시 확인해주세요.');
+                    return;
+                }
+
+                currentUser = { name: matchedUser.name, email: matchedUser.email };
+                localStorage.setItem('fin_calc_user', JSON.stringify(currentUser));
+                showToast(`${matchedUser.name}님, 환영합니다!`);
+                closeAuthModal();
+                updateHeaderAuthUI();
+                renderHomeRecent();
+                if (currentScreen === 'mypage') renderMypage();
+            }
+        }
+
+        function handleLogout() {
+            currentUser = null;
+            localStorage.removeItem('fin_calc_user');
+            updateHeaderAuthUI();
+            renderHomeRecent();
+            showToast('로그아웃 되었습니다.');
+            if (currentScreen === 'mypage') renderMypage();
+        }
+
+        function renderMypage() {
+            const card = document.getElementById('mypage-user-card');
+            const lockCard = document.getElementById('mypage-auth-lock-card');
+            const historyArea = document.getElementById('area-mypage-history');
+            const compareArea = document.getElementById('area-mypage-compare');
+
+            if (currentUser) {
+                card.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-11 h-11 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-base shadow-md">
+                            ${currentUser.name.charAt(0)}
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-1.5">
+                                <h3 class="font-extrabold text-slate-800 text-sm">${currentUser.name} 님</h3>
+                                <span class="bg-indigo-50 text-indigo-600 text-[10px] px-2 py-0.5 rounded-full font-bold">사회초년생</span>
+                            </div>
+                            <p class="text-xs text-slate-400">${currentUser.email}</p>
+                        </div>
+                    </div>
+                    <button onclick="handleLogout()" class="text-xs text-slate-400 hover:text-rose-500 font-semibold underline">
+                        로그아웃
+                    </button>
+                `;
+                lockCard.classList.add('hidden');
+                switchMypageTab(currentMypageTab || 'history');
+            } else {
+                card.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-base">
+                            <i class="fa-solid fa-user"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-xs">비회원 이용 중</h3>
+                            <p class="text-[11px] text-slate-400">로그인하여 내 계산 데이터 및 비교기능을 활용하세요.</p>
+                        </div>
+                    </div>
+                    <button onclick="openAuthModal('login')" class="bg-indigo-600 text-white font-bold px-3 py-1.5 rounded-xl text-xs active-tap">
+                        로그인
+                    </button>
+                `;
+                lockCard.classList.remove('hidden');
+                historyArea.classList.add('hidden');
+                compareArea.classList.add('hidden');
+            }
+            renderHistoryList();
+        }
+
+        function switchMypageTab(tab) {
+            currentMypageTab = tab;
+            
+            if (!currentUser) {
+                openAuthModal('login');
+                return;
+            }
+
+            if(tab === 'history') {
+                document.getElementById('area-mypage-history').classList.remove('hidden');
+                document.getElementById('area-mypage-compare').classList.add('hidden');
+                document.getElementById('mypage-tab-btn-history').className = 'flex-1 py-2 rounded-lg bg-white text-indigo-700 shadow-sm transition-all';
+                document.getElementById('mypage-tab-btn-compare').className = 'flex-1 py-2 rounded-lg text-slate-600 transition-all';
+            } else {
+                document.getElementById('area-mypage-history').classList.add('hidden');
+                document.getElementById('area-mypage-compare').classList.remove('hidden');
+                document.getElementById('mypage-tab-btn-history').className = 'flex-1 py-2 rounded-lg text-slate-600 transition-all';
+                document.getElementById('mypage-tab-btn-compare').className = 'flex-1 py-2 rounded-lg bg-white text-purple-700 shadow-sm transition-all';
+                calcCompare();
+            }
+        }
+
+        function switchSavingsTab(tab) {
+            if(tab === 'deposit') {
+                document.getElementById('area-deposit-form').classList.remove('hidden');
+                document.getElementById('area-savings-form').classList.add('hidden');
+                document.getElementById('tab-btn-deposit').className = 'flex-1 py-2 rounded-lg bg-white text-indigo-700 shadow-sm transition-all';
+                document.getElementById('tab-btn-savings').className = 'flex-1 py-2 rounded-lg text-slate-600 transition-all';
+            } else {
+                document.getElementById('area-deposit-form').classList.add('hidden');
+                document.getElementById('area-savings-form').classList.remove('hidden');
+                document.getElementById('tab-btn-deposit').className = 'flex-1 py-2 rounded-lg text-slate-600 transition-all';
+                document.getElementById('tab-btn-savings').className = 'flex-1 py-2 rounded-lg bg-white text-emerald-700 shadow-sm transition-all';
+            }
+        }
+
+        function calcDeposit() {
+            const amt = parseFloat(document.getElementById('dep-amount').value) || 0;
+            const months = parseFloat(document.getElementById('dep-period').value) || 0;
+            const rate = (parseFloat(document.getElementById('dep-rate').value) || 0) / 100;
+            const gross = amt * rate * (months / 12);
+            const net = gross * (1 - 0.154);
+            document.getElementById('dep-res-total').textContent = `${formatNum(amt + net)}원`;
+            document.getElementById('dep-res-gross').textContent = `+${formatNum(gross)}원`;
+            document.getElementById('dep-res-tax').textContent = `-${formatNum(gross * 0.154)}원`;
+        }
+
+        function calcSavings() {
+            const amt = parseFloat(document.getElementById('sav-amount').value) || 0;
+            const months = parseFloat(document.getElementById('sav-period').value) || 0;
+            const rate = (parseFloat(document.getElementById('sav-rate').value) || 0) / 100;
+            const principal = amt * months;
+            const gross = amt * (rate / 12) * (months * (months + 1) / 2);
+            const net = gross * (1 - 0.154);
+            document.getElementById('sav-res-total').textContent = `${formatNum(principal + net)}원`;
+            document.getElementById('sav-res-principal').textContent = `${formatNum(principal)}원`;
+            document.getElementById('sav-res-net').textContent = `+${formatNum(net)}원`;
+        }
+
+        function calcLoan() {
+            const amt = parseFloat(document.getElementById('loan-amount').value) || 0;
+            const months = parseFloat(document.getElementById('loan-period').value) || 0;
+            const rate = (parseFloat(document.getElementById('loan-rate').value) || 0) / 100;
+            const r = rate / 12;
+            const monthly = amt * (r * Math.pow(1 + r, months)) / (Math.pow(1 + r, months) - 1);
+            const totalPaid = monthly * months;
+            document.getElementById('loan-res-monthly').textContent = `${formatNum(monthly)}원`;
+            document.getElementById('loan-res-principal').textContent = `${formatNum(amt)}원`;
+            document.getElementById('loan-res-total-interest').textContent = `${formatNum(totalPaid - amt)}원`;
+        }
+
+        function calcCompare() {
+            const amtA = parseFloat(document.getElementById('cmp-a-amt').value) || 0;
+            const rateA = (parseFloat(document.getElementById('cmp-a-rate').value) || 0) / 100;
+            const netA = amtA * rateA * (1 - 0.154);
+
+            const amtB = parseFloat(document.getElementById('cmp-b-amt').value) || 0;
+            const rateB = (parseFloat(document.getElementById('cmp-b-rate').value) || 0) / 100;
+            const netB = amtB * rateB * (1 - 0.154);
+
+            document.getElementById('cmp-chart-a-val').textContent = `${formatNum(netA)}원`;
+            document.getElementById('cmp-chart-b-val').textContent = `${formatNum(netB)}원`;
+
+            const max = Math.max(netA, netB, 1);
+            document.getElementById('cmp-chart-a-bar').style.width = `${(netA/max)*100}%`;
+            document.getElementById('cmp-chart-b-bar').style.width = `${(netB/max)*100}%`;
+
+            const diff = Math.abs(netA - netB);
+            document.getElementById('cmp-summary-box').textContent = netB >= netA 
+                ? `조건 B가 세후 ${formatNum(diff)}원 더 유리합니다!`
+                : `조건 A가 세후 ${formatNum(diff)}원 더 유리합니다!`;
+        }
+
+        function saveCurrentResult(type) {
+            const list = getHistory();
+            const now = new Date();
+            const dateStr = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}`;
+            let item = { id: Date.now(), date: dateStr, type };
+
+            if (type === 'deposit') {
+                item.title = '예금 계산';
+                item.amount = document.getElementById('dep-res-total').textContent;
+                item.sub = `원금 ${formatNum(document.getElementById('dep-amount').value)}원`;
+            } else if (type === 'savings') {
+                item.title = '적금 계산';
+                item.amount = document.getElementById('sav-res-total').textContent;
+                item.sub = `월 ${formatNum(document.getElementById('sav-amount').value)}원`;
+            } else {
+                item.title = '대출 계산';
+                item.amount = `월 ${document.getElementById('loan-res-monthly').textContent}`;
+                item.sub = `대출금 ${formatNum(document.getElementById('loan-amount').value)}원`;
+            }
+
+            list.unshift(item);
+            saveHistoryData(list);
+            showToast('마이페이지 기록에 저장되었습니다!');
+        }
+
+        function clearHistory() {
+            saveHistoryData([]);
+            renderHistoryList();
+            renderHomeRecent();
+            showToast('기록이 전체 삭제되었습니다.');
+        }
+
+        function renderHistoryList() {
+            const container = document.getElementById('history-container');
+            const list = getHistory();
+            if(list.length === 0) {
+                container.innerHTML = `<div class="text-center py-8 text-xs text-slate-400 bg-white rounded-xl">저장된 기록이 없습니다.</div>`;
+                return;
+            }
+            container.innerHTML = list.map(item => `
+                <div class="bg-white p-3 rounded-xl border border-slate-100 flex items-center justify-between shadow-sm text-xs">
+                    <div>
+                        <div class="font-bold text-slate-800">${item.title} <span class="text-[10px] text-slate-400 font-normal">(${item.date})</span></div>
+                        <div class="font-black text-indigo-900 text-sm mt-0.5">${item.amount}</div>
+                        <div class="text-[10px] text-slate-400">${item.sub}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderHomeRecent() {
+            const container = document.getElementById('home-recent-list');
+            const viewAllBtn = document.getElementById('home-view-all-btn');
+            
+            if (!currentUser) {
+                if (viewAllBtn) viewAllBtn.classList.add('hidden');
+                container.innerHTML = `
+                    <!-- Interactive Sample Preview Card for Non-Logged Users -->
+                    <div class="bg-gradient-to-br from-slate-900 to-indigo-950 text-white p-4 rounded-2xl shadow-md border border-indigo-500/30 space-y-3 relative overflow-hidden">
+                        
+                        <!-- Sample Item 1: After-Tax Return -->
+                        <div class="bg-white/10 backdrop-blur-md p-3 rounded-xl border border-white/10 flex items-center justify-between">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-8 h-8 rounded-lg bg-indigo-500/30 text-indigo-300 flex items-center justify-center text-xs font-bold">
+                                    <i class="fa-solid fa-vault"></i>
+                                </div>
+                                <div>
+                                    <span class="text-[10px] text-indigo-200 block">정기예금 (원금 1,000만원 · 12개월)</span>
+                                    <div class="text-xs font-black text-white">세후 실수령액 <span class="text-emerald-400">10,296,100원</span></div>
+                                </div>
+                            </div>
+                            <span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded font-bold">이자 +29.6만</span>
+                        </div>
+
+                        <!-- Sample Item 2: Comparison Example -->
+                        <div class="bg-purple-950/50 p-3 rounded-xl border border-purple-400/30 flex items-center justify-between">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-8 h-8 rounded-lg bg-purple-500/30 text-purple-300 flex items-center justify-center text-xs font-bold">
+                                    <i class="fa-solid fa-code-compare"></i>
+                                </div>
+                                <div>
+                                    <span class="text-[10px] text-purple-200 block">조건 A(3.5%) vs 조건 B(4.0%) 비교</span>
+                                    <div class="text-xs font-black text-amber-300">조건 B가 세후 +42,300원 더 유리!</div>
+                                </div>
+                            </div>
+                            <i class="fa-solid fa-chevron-right text-purple-300 text-xs"></i>
+                        </div>
+
+                        <button onclick="openAuthModal('login')" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 rounded-xl text-xs transition-all active-tap shadow-sm flex items-center justify-center gap-1.5 mt-1">
+                            <i class="fa-solid fa-right-to-bracket"></i> 로그인하고 내 실시간 저장기능 시작하기
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            if (viewAllBtn) viewAllBtn.classList.remove('hidden');
+
+            const list = getHistory().slice(0, 2);
+            if(list.length === 0) {
+                container.innerHTML = `<div class="text-center py-3 text-xs text-slate-400 bg-white rounded-xl">저장 내역이 없습니다.</div>`;
+                return;
+            }
+            container.innerHTML = list.map(item => `
+                <div onclick="navTo('mypage')" class="bg-white p-2.5 rounded-xl border border-slate-100 flex items-center justify-between text-xs cursor-pointer">
+                    <div>
+                        <span class="text-[10px] text-slate-400">${item.title}</span>
+                        <div class="font-bold text-slate-800">${item.amount}</div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-slate-300 text-xs"></i>
+                </div>
+            `).join('');
+        }
+
+        window.onload = function() {
+            updateHeaderAuthUI();
+            renderHomeRecent();
+            calcDeposit();
+            calcSavings();
+            calcLoan();
+        };
+    </script>
+</body>
+</html>
