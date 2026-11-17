@@ -16,17 +16,13 @@ function saveHistoryData(data) {
     localStorage.setItem('fin_calc_history', JSON.stringify(data));
 }
 
-// 구글 시트(Apps Script 웹 앱) 연결
-const SHEET_API = 'https://script.google.com/macros/s/AKfycbxPffF_RgVx79paq_XJNKNHcer42E8q73t_ngB_0YT-qbPGsLPbfBlKaBS4fXfKdUd0iQ/exec';
+function getUsersDB() {
+    const users = localStorage.getItem('fin_calc_users');
+    return users ? JSON.parse(users) : [];
+}
 
-async function callApi(payload) {
-    // text/plain 으로 보내야 CORS preflight 없이 처리됨
-    const res = await fetch(SHEET_API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(payload)
-    });
-    return await res.json();
+function saveUsersDB(users) {
+    localStorage.setItem('fin_calc_users', JSON.stringify(users));
 }
 
 function navTo(screenId) {
@@ -59,6 +55,50 @@ function showToast(msg) {
 }
 
 function formatNum(num) { return Math.round(num).toLocaleString('ko-KR'); }
+
+// 숫자를 읽기 쉬운 한글 금액으로 변환 (예: 10000000 -> 1,000만원, 100000000 -> 1억원)
+function formatKoreanCurrency(value) {
+    const num = Math.floor(Number(value));
+    if (!num || num <= 0 || isNaN(num)) return '';
+
+    const units = [
+        { unit: 1000000000000, label: '조' },
+        { unit: 100000000, label: '억' },
+        { unit: 10000, label: '만' }
+    ];
+
+    let remainder = num;
+    const parts = [];
+
+    for (const { unit, label } of units) {
+        const quotient = Math.floor(remainder / unit);
+        if (quotient > 0) {
+            parts.push(`${quotient.toLocaleString('ko-KR')}${label}`);
+            remainder %= unit;
+        }
+    }
+
+    if (remainder > 0) {
+        parts.push(remainder.toLocaleString('ko-KR'));
+    }
+
+    return `${parts.join(' ')}원`;
+}
+
+function bindKoreanAmountHint(inputId, hintId) {
+    const input = document.getElementById(inputId);
+    const hint = document.getElementById(hintId);
+    if (!input || !hint) return;
+
+    const update = () => {
+        const formatted = formatKoreanCurrency(input.value);
+        hint.textContent = formatted;
+        hint.classList.toggle('hidden', !formatted);
+    };
+
+    input.addEventListener('input', update);
+    update();
+}
 
 function updateHeaderAuthUI() {
     const container = document.getElementById('header-user-status');
@@ -104,71 +144,61 @@ function toggleAuthMode(mode) {
     }
 }
 
-async function handleAuthSubmit(event, type) {
+function handleAuthSubmit(event, type) {
     event.preventDefault();
-    const btn = event.target.querySelector('button[type="submit"]');
-    btn.disabled = true;
-    const oldText = btn.textContent;
-    btn.textContent = '처리 중...';
+    const users = getUsersDB();
 
-    try {
-        if (type === 'signup') {
-            const name = document.getElementById('signup-name').value.trim();
-            const email = document.getElementById('signup-email').value.trim();
-            const pw = document.getElementById('signup-pw').value;
+    if (type === 'signup') {
+        const name = document.getElementById('signup-name').value.trim();
+        const email = document.getElementById('signup-email').value.trim();
+        const pw = document.getElementById('signup-pw').value;
 
-            const r = await callApi({ action: 'signup', name, email, pw });
-
-            if (!r.ok && r.error === 'exists') {
-                showToast('이미 가입된 이메일입니다. 로그인해 주세요.');
-                toggleAuthMode('login');
-                document.getElementById('login-email').value = email;
-                return;
-            }
-            if (!r.ok) {
-                showToast(r.error === 'invalid' ? '입력값을 확인해 주세요. (비밀번호 4자 이상)' : '가입 중 오류가 발생했습니다.');
-                return;
-            }
-            loginSuccess(r.user, `${r.user.name}님, 회원가입 완료 및 로그인되었습니다!`);
-
-        } else {
-            const email = document.getElementById('login-email').value.trim();
-            const pw = document.getElementById('login-pw').value;
-
-            const r = await callApi({ action: 'login', email, pw });
-
-            if (!r.ok && r.error === 'not_found') {
-                showToast('가입되지 않은 계정입니다. 회원가입을 먼저 진행해주세요.');
-                toggleAuthMode('signup');
-                document.getElementById('signup-email').value = email;
-                return;
-            }
-            if (!r.ok && r.error === 'wrong_pw') {
-                showToast('비밀번호가 일치하지 않습니다. 다시 확인해주세요.');
-                return;
-            }
-            if (!r.ok) {
-                showToast('로그인 중 오류가 발생했습니다.');
-                return;
-            }
-            loginSuccess(r.user, `${r.user.name}님, 환영합니다!`);
+        const existingUser = users.find(u => u.email === email);
+        if (existingUser) {
+            showToast('이미 가입된 이메일입니다. 로그인해 주세요.');
+            toggleAuthMode('login');
+            document.getElementById('login-email').value = email;
+            return;
         }
-    } catch (err) {
-        showToast('서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.');
-    } finally {
-        btn.disabled = false;
-        btn.textContent = oldText;
-    }
-}
 
-function loginSuccess(user, msg) {
-    currentUser = { name: user.name, email: user.email };
-    localStorage.setItem('fin_calc_user', JSON.stringify(currentUser));
-    showToast(msg);
-    closeAuthModal();
-    updateHeaderAuthUI();
-    renderHomeRecent();
-    if (currentScreen === 'mypage') renderMypage();
+        const newUser = { name, email, pw };
+        users.push(newUser);
+        saveUsersDB(users);
+
+        currentUser = { name, email };
+        localStorage.setItem('fin_calc_user', JSON.stringify(currentUser));
+        showToast(`${name}님, 회원가입 완료 및 로그인되었습니다!`);
+        closeAuthModal();
+        updateHeaderAuthUI();
+        renderHomeRecent();
+        if (currentScreen === 'mypage') renderMypage();
+
+    } else {
+        const email = document.getElementById('login-email').value.trim();
+        const pw = document.getElementById('login-pw').value;
+
+        const matchedUser = users.find(u => u.email === email);
+
+        if (!matchedUser) {
+            showToast('가입되지 않은 계정입니다. 회원가입을 먼저 진행해주세요.');
+            toggleAuthMode('signup');
+            document.getElementById('signup-email').value = email;
+            return;
+        }
+
+        if (matchedUser.pw !== pw) {
+            showToast('비밀번호가 일치하지 않습니다. 다시 확인해주세요.');
+            return;
+        }
+
+        currentUser = { name: matchedUser.name, email: matchedUser.email };
+        localStorage.setItem('fin_calc_user', JSON.stringify(currentUser));
+        showToast(`${matchedUser.name}님, 환영합니다!`);
+        closeAuthModal();
+        updateHeaderAuthUI();
+        renderHomeRecent();
+        if (currentScreen === 'mypage') renderMypage();
+    }
 }
 
 function handleLogout() {
@@ -210,7 +240,7 @@ function renderMypage() {
         card.innerHTML = `
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-base">
-                    <i class="fa-solid fa-user"></i>
+                    <svg class="fa-ico" viewBox="0 0 448 512" fill="currentColor" aria-hidden="true"><path d="M224 256A128 128 0 1 0 224 0a128 128 0 1 0 0 256zm-45.7 48C79.8 304 0 383.8 0 482.3C0 498.7 13.3 512 29.7 512l388.6 0c16.4 0 29.7-13.3 29.7-29.7C448 383.8 368.2 304 269.7 304l-91.4 0z"></path></svg>
                 </div>
                 <div>
                     <h3 class="font-bold text-slate-800 text-xs">비회원 이용 중</h3>
@@ -230,7 +260,7 @@ function renderMypage() {
 
 function switchMypageTab(tab) {
     currentMypageTab = tab;
-
+    
     if (!currentUser) {
         openAuthModal('login');
         return;
@@ -264,9 +294,68 @@ function switchSavingsTab(tab) {
     }
 }
 
+// ---- 기간 선택 칩 (1/3/6/12/24/36개월 + 직접 입력)
+const PERIOD_PRESETS = [1, 3, 6, 12, 24, 36];
+const PERIOD_ACTIVE = {
+    dep:  'bg-indigo-600 text-white border-indigo-600',
+    sav:  'bg-emerald-600 text-white border-emerald-600',
+    loan: 'bg-amber-500 text-white border-amber-500'
+};
+const PERIOD_IDLE = 'bg-white text-slate-600 border-slate-200';
+const periodState = {};
+
+function renderPeriodChips(p) {
+    const wrap = document.getElementById(`${p}-period-chips`);
+    const sel = periodState[p];
+    const chip = (key, label) => {
+        const cls = sel === key ? PERIOD_ACTIVE[p] : PERIOD_IDLE;
+        return `<button type="button" onclick="selectPeriod('${p}', '${key}')" class="px-3 py-1.5 rounded-full border text-xs font-semibold transition-all active-tap ${cls}">${label}</button>`;
+    };
+    wrap.innerHTML = PERIOD_PRESETS.map(m => chip(String(m), `${m}개월`)).join('') + chip('custom', '직접 입력');
+}
+
+function selectPeriod(p, key) {
+    const input = document.getElementById(`${p}-period`);
+    const customWrap = document.getElementById(`${p}-period-custom-wrap`);
+    periodState[p] = key;
+    if (key === 'custom') {
+        customWrap.classList.remove('hidden');
+        input.focus();
+        input.select();
+    } else {
+        customWrap.classList.add('hidden');
+        input.value = key;
+    }
+    renderPeriodChips(p);
+}
+
+function initPeriodPicker(p) {
+    const v = String(parseInt(document.getElementById(`${p}-period`).value, 10));
+    periodState[p] = PERIOD_PRESETS.map(String).includes(v) ? v : '12';
+    if (periodState[p] !== v) document.getElementById(`${p}-period`).value = periodState[p];
+    renderPeriodChips(p);
+}
+
+function readMonths(id) {
+    return Math.max(1, Math.round(parseFloat(document.getElementById(id).value) || 0));
+}
+
+function clampRate(el, max) {
+    const v = parseFloat(el.value);
+    if (!isNaN(v) && v > max) el.value = max;
+    if (!isNaN(v) && v < 0) el.value = 0;
+}
+
+function toggleBox(boxId, iconId) {
+    const box = document.getElementById(boxId);
+    const icon = document.getElementById(iconId);
+    const open = box.classList.toggle('hidden') === false;
+    icon.style.transform = open ? 'rotate(180deg)' : 'rotate(0deg)';
+}
+
 function calcDeposit() {
     const amt = parseFloat(document.getElementById('dep-amount').value) || 0;
-    const months = parseFloat(document.getElementById('dep-period').value) || 0;
+    const months = readMonths('dep-period');
     const rate = (parseFloat(document.getElementById('dep-rate').value) || 0) / 100;
     const gross = amt * rate * (months / 12);
     const net = gross * (1 - 0.154);
@@ -277,7 +366,7 @@ function calcDeposit() {
 
 function calcSavings() {
     const amt = parseFloat(document.getElementById('sav-amount').value) || 0;
-    const months = parseFloat(document.getElementById('sav-period').value) || 0;
+    const months = readMonths('sav-period');
     const rate = (parseFloat(document.getElementById('sav-rate').value) || 0) / 100;
     const principal = amt * months;
     const gross = amt * (rate / 12) * (months * (months + 1) / 2);
@@ -289,14 +378,37 @@ function calcSavings() {
 
 function calcLoan() {
     const amt = parseFloat(document.getElementById('loan-amount').value) || 0;
-    const months = parseFloat(document.getElementById('loan-period').value) || 0;
-    const rate = (parseFloat(document.getElementById('loan-rate').value) || 0) / 100;
+    const months = readMonths('loan-period');
+    const rate = Math.min(20, Math.max(0, parseFloat(document.getElementById('loan-rate').value) || 0)) / 100;
+    const type = document.getElementById('loan-type').value;
     const r = rate / 12;
-    const monthly = amt * (r * Math.pow(1 + r, months)) / (Math.pow(1 + r, months) - 1);
-    const totalPaid = monthly * months;
+    let monthly, totalInterest, detail;
+
+    if (type === 'equal-principal') {
+        // 원금균등: 매달 원금(amt/n) + 남은 원금에 대한 이자
+        const principalPart = amt / months;
+        const first = principalPart + amt * r;
+        const last = principalPart + (amt / months) * r;
+        totalInterest = amt * r * (months + 1) / 2;
+        monthly = (amt + totalInterest) / months;
+        detail = `첫 달 ${formatNum(first)}원 → 마지막 달 ${formatNum(last)}원`;
+    } else if (type === 'bullet') {
+        // 만기일시: 매달 이자만, 만기에 원금 상환
+        const monthlyInterest = amt * r;
+        totalInterest = monthlyInterest * months;
+        monthly = (amt + totalInterest) / months;
+        detail = `매달 이자 ${formatNum(monthlyInterest)}원, 만기에 원금 ${formatNum(amt)}원`;
+    } else {
+        // 원리금균등
+        monthly = r === 0 ? amt / months : amt * (r * Math.pow(1 + r, months)) / (Math.pow(1 + r, months) - 1);
+        totalInterest = monthly * months - amt;
+        detail = '매달 동일';
+    }
+
     document.getElementById('loan-res-monthly').textContent = `${formatNum(monthly)}원`;
+    document.getElementById('loan-res-detail').textContent = detail;
     document.getElementById('loan-res-principal').textContent = `${formatNum(amt)}원`;
-    document.getElementById('loan-res-total-interest').textContent = `${formatNum(totalPaid - amt)}원`;
+    document.getElementById('loan-res-total-interest').textContent = `${formatNum(totalInterest)}원`;
 }
 
 function calcCompare() {
@@ -374,18 +486,18 @@ function renderHistoryList() {
 function renderHomeRecent() {
     const container = document.getElementById('home-recent-list');
     const viewAllBtn = document.getElementById('home-view-all-btn');
-
+    
     if (!currentUser) {
         if (viewAllBtn) viewAllBtn.classList.add('hidden');
         container.innerHTML = `
             <!-- Interactive Sample Preview Card for Non-Logged Users -->
             <div class="bg-gradient-to-br from-slate-900 to-indigo-950 text-white p-4 rounded-2xl shadow-md border border-indigo-500/30 space-y-3 relative overflow-hidden">
-
+                
                 <!-- Sample Item 1: After-Tax Return -->
                 <div class="bg-white/10 backdrop-blur-md p-3 rounded-xl border border-white/10 flex items-center justify-between">
                     <div class="flex items-center gap-2.5">
                         <div class="w-8 h-8 rounded-lg bg-indigo-500/30 text-indigo-300 flex items-center justify-center text-xs font-bold">
-                            <i class="fa-solid fa-vault"></i>
+                            <svg class="fa-ico" viewBox="0 0 576 512" fill="currentColor" aria-hidden="true"><path d="M64 0C28.7 0 0 28.7 0 64L0 416c0 35.3 28.7 64 64 64l16 0 16 32 64 0 16-32 224 0 16 32 64 0 16-32 16 0c35.3 0 64-28.7 64-64l0-352c0-35.3-28.7-64-64-64L64 0zM224 320a80 80 0 1 0 0-160 80 80 0 1 0 0 160zm0-240a160 160 0 1 1 0 320 160 160 0 1 1 0-320zM480 221.3L480 336c0 8.8-7.2 16-16 16s-16-7.2-16-16l0-114.7c-18.6-6.6-32-24.4-32-45.3c0-26.5 21.5-48 48-48s48 21.5 48 48c0 20.9-13.4 38.7-32 45.3z"></path></svg>
                         </div>
                         <div>
                             <span class="text-[10px] text-indigo-200 block">정기예금 (원금 1,000만원 · 12개월)</span>
@@ -399,18 +511,18 @@ function renderHomeRecent() {
                 <div class="bg-purple-950/50 p-3 rounded-xl border border-purple-400/30 flex items-center justify-between">
                     <div class="flex items-center gap-2.5">
                         <div class="w-8 h-8 rounded-lg bg-purple-500/30 text-purple-300 flex items-center justify-center text-xs font-bold">
-                            <i class="fa-solid fa-code-compare"></i>
+                            <svg class="fa-ico" viewBox="0 0 512 512" fill="currentColor" aria-hidden="true"><path d="M320 488c0 9.5-5.6 18.1-14.2 21.9s-18.8 2.3-25.8-4.1l-80-72c-5.1-4.6-7.9-11-7.9-17.8s2.9-13.3 7.9-17.8l80-72c7-6.3 17.2-7.9 25.8-4.1s14.2 12.4 14.2 21.9l0 40 16 0c35.3 0 64-28.7 64-64l0-166.7C371.7 141 352 112.8 352 80c0-44.2 35.8-80 80-80s80 35.8 80 80c0 32.8-19.7 61-48 73.3L464 320c0 70.7-57.3 128-128 128l-16 0 0 40zM456 80a24 24 0 1 0 -48 0 24 24 0 1 0 48 0zM192 24c0-9.5 5.6-18.1 14.2-21.9s18.8-2.3 25.8 4.1l80 72c5.1 4.6 7.9 11 7.9 17.8s-2.9 13.3-7.9 17.8l-80 72c-7 6.3-17.2 7.9-25.8 4.1s-14.2-12.4-14.2-21.9l0-40-16 0c-35.3 0-64 28.7-64 64l0 166.7c28.3 12.3 48 40.5 48 73.3c0 44.2-35.8 80-80 80s-80-35.8-80-80c0-32.8 19.7-61 48-73.3L48 192c0-70.7 57.3-128 128-128l16 0 0-40zM56 432a24 24 0 1 0 48 0 24 24 0 1 0 -48 0z"></path></svg>
                         </div>
                         <div>
                             <span class="text-[10px] text-purple-200 block">조건 A(3.5%) vs 조건 B(4.0%) 비교</span>
                             <div class="text-xs font-black text-amber-300">조건 B가 세후 +42,300원 더 유리!</div>
                         </div>
                     </div>
-                    <i class="fa-solid fa-chevron-right text-purple-300 text-xs"></i>
+                    <svg class="fa-ico text-purple-300 text-xs" viewBox="0 0 320 512" fill="currentColor" aria-hidden="true"><path d="M310.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-192 192c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L242.7 256 73.4 86.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l192 192z"></path></svg>
                 </div>
 
                 <button onclick="openAuthModal('login')" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 rounded-xl text-xs transition-all active-tap shadow-sm flex items-center justify-center gap-1.5 mt-1">
-                    <i class="fa-solid fa-right-to-bracket"></i> 로그인하고 내 실시간 저장기능 시작하기
+                    <svg class="fa-ico" viewBox="0 0 512 512" fill="currentColor" aria-hidden="true"><path d="M217.9 105.9L340.7 228.7c7.2 7.2 11.3 17.1 11.3 27.3s-4.1 20.1-11.3 27.3L217.9 406.1c-6.4 6.4-15 9.9-24 9.9c-18.7 0-33.9-15.2-33.9-33.9l0-62.1L32 320c-17.7 0-32-14.3-32-32l0-64c0-17.7 14.3-32 32-32l128 0 0-62.1c0-18.7 15.2-33.9 33.9-33.9c9 0 17.6 3.6 24 9.9zM352 416l64 0c17.7 0 32-14.3 32-32l0-256c0-17.7-14.3-32-32-32l-64 0c-17.7 0-32-14.3-32-32s14.3-32 32-32l64 0c53 0 96 43 96 96l0 256c0 53-43 96-96 96l-64 0c-17.7 0-32-14.3-32-32s14.3-32 32-32z"></path></svg> 로그인하고 내 실시간 저장기능 시작하기
                 </button>
             </div>
         `;
@@ -430,7 +542,7 @@ function renderHomeRecent() {
                 <span class="text-[10px] text-slate-400">${item.title}</span>
                 <div class="font-bold text-slate-800">${item.amount}</div>
             </div>
-            <i class="fa-solid fa-chevron-right text-slate-300 text-xs"></i>
+            <svg class="fa-ico text-slate-300 text-xs" viewBox="0 0 320 512" fill="currentColor" aria-hidden="true"><path d="M310.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-192 192c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L242.7 256 73.4 86.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l192 192z"></path></svg>
         </div>
     `).join('');
 }
@@ -438,6 +550,15 @@ function renderHomeRecent() {
 window.onload = function() {
     updateHeaderAuthUI();
     renderHomeRecent();
+    ['dep', 'sav', 'loan'].forEach(initPeriodPicker);
+
+    // 금액 입력란 한글 단위 실시간 바인딩
+    bindKoreanAmountHint('dep-amount', 'dep-amount-ko');
+    bindKoreanAmountHint('sav-amount', 'sav-amount-ko');
+    bindKoreanAmountHint('loan-amount', 'loan-amount-ko');
+    bindKoreanAmountHint('cmp-a-amt', 'cmp-a-amt-ko');
+    bindKoreanAmountHint('cmp-b-amt', 'cmp-b-amt-ko');
+
     calcDeposit();
     calcSavings();
     calcLoan();
