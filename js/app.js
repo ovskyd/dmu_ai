@@ -16,13 +16,17 @@ function saveHistoryData(data) {
     localStorage.setItem('fin_calc_history', JSON.stringify(data));
 }
 
-function getUsersDB() {
-    const users = localStorage.getItem('fin_calc_users');
-    return users ? JSON.parse(users) : [];
-}
+// 구글 시트(Apps Script 웹 앱) 연결
+const SHEET_API = 'https://script.google.com/macros/s/AKfycbxPffF_RgVx79paq_XJNKNHcer42E8q73t_ngB_0YT-qbPGsLPbfBlKaBS4fXfKdUd0iQ/exec';
 
-function saveUsersDB(users) {
-    localStorage.setItem('fin_calc_users', JSON.stringify(users));
+async function callApi(payload) {
+    // text/plain 으로 보내야 CORS preflight 없이 처리됨
+    const res = await fetch(SHEET_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+    });
+    return await res.json();
 }
 
 function navTo(screenId) {
@@ -100,61 +104,71 @@ function toggleAuthMode(mode) {
     }
 }
 
-function handleAuthSubmit(event, type) {
+async function handleAuthSubmit(event, type) {
     event.preventDefault();
-    const users = getUsersDB();
+    const btn = event.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    const oldText = btn.textContent;
+    btn.textContent = '처리 중...';
 
-    if (type === 'signup') {
-        const name = document.getElementById('signup-name').value.trim();
-        const email = document.getElementById('signup-email').value.trim();
-        const pw = document.getElementById('signup-pw').value;
+    try {
+        if (type === 'signup') {
+            const name = document.getElementById('signup-name').value.trim();
+            const email = document.getElementById('signup-email').value.trim();
+            const pw = document.getElementById('signup-pw').value;
 
-        const existingUser = users.find(u => u.email === email);
-        if (existingUser) {
-            showToast('이미 가입된 이메일입니다. 로그인해 주세요.');
-            toggleAuthMode('login');
-            document.getElementById('login-email').value = email;
-            return;
+            const r = await callApi({ action: 'signup', name, email, pw });
+
+            if (!r.ok && r.error === 'exists') {
+                showToast('이미 가입된 이메일입니다. 로그인해 주세요.');
+                toggleAuthMode('login');
+                document.getElementById('login-email').value = email;
+                return;
+            }
+            if (!r.ok) {
+                showToast(r.error === 'invalid' ? '입력값을 확인해 주세요. (비밀번호 4자 이상)' : '가입 중 오류가 발생했습니다.');
+                return;
+            }
+            loginSuccess(r.user, `${r.user.name}님, 회원가입 완료 및 로그인되었습니다!`);
+
+        } else {
+            const email = document.getElementById('login-email').value.trim();
+            const pw = document.getElementById('login-pw').value;
+
+            const r = await callApi({ action: 'login', email, pw });
+
+            if (!r.ok && r.error === 'not_found') {
+                showToast('가입되지 않은 계정입니다. 회원가입을 먼저 진행해주세요.');
+                toggleAuthMode('signup');
+                document.getElementById('signup-email').value = email;
+                return;
+            }
+            if (!r.ok && r.error === 'wrong_pw') {
+                showToast('비밀번호가 일치하지 않습니다. 다시 확인해주세요.');
+                return;
+            }
+            if (!r.ok) {
+                showToast('로그인 중 오류가 발생했습니다.');
+                return;
+            }
+            loginSuccess(r.user, `${r.user.name}님, 환영합니다!`);
         }
-
-        const newUser = { name, email, pw };
-        users.push(newUser);
-        saveUsersDB(users);
-
-        currentUser = { name, email };
-        localStorage.setItem('fin_calc_user', JSON.stringify(currentUser));
-        showToast(`${name}님, 회원가입 완료 및 로그인되었습니다!`);
-        closeAuthModal();
-        updateHeaderAuthUI();
-        renderHomeRecent();
-        if (currentScreen === 'mypage') renderMypage();
-
-    } else {
-        const email = document.getElementById('login-email').value.trim();
-        const pw = document.getElementById('login-pw').value;
-
-        const matchedUser = users.find(u => u.email === email);
-
-        if (!matchedUser) {
-            showToast('가입되지 않은 계정입니다. 회원가입을 먼저 진행해주세요.');
-            toggleAuthMode('signup');
-            document.getElementById('signup-email').value = email;
-            return;
-        }
-
-        if (matchedUser.pw !== pw) {
-            showToast('비밀번호가 일치하지 않습니다. 다시 확인해주세요.');
-            return;
-        }
-
-        currentUser = { name: matchedUser.name, email: matchedUser.email };
-        localStorage.setItem('fin_calc_user', JSON.stringify(currentUser));
-        showToast(`${matchedUser.name}님, 환영합니다!`);
-        closeAuthModal();
-        updateHeaderAuthUI();
-        renderHomeRecent();
-        if (currentScreen === 'mypage') renderMypage();
+    } catch (err) {
+        showToast('서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = oldText;
     }
+}
+
+function loginSuccess(user, msg) {
+    currentUser = { name: user.name, email: user.email };
+    localStorage.setItem('fin_calc_user', JSON.stringify(currentUser));
+    showToast(msg);
+    closeAuthModal();
+    updateHeaderAuthUI();
+    renderHomeRecent();
+    if (currentScreen === 'mypage') renderMypage();
 }
 
 function handleLogout() {
