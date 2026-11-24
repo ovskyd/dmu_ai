@@ -1,4 +1,3 @@
-[README_updated.md](https://github.com/user-attachments/files/35308442/README_updated.md)
 # 스마트 금융 계산기 & 마이페이지 (dmu_ai)
 
 예금·적금·대출을 **세후 실수령액** 기준으로 간편하게 계산하고, 조건별로 비교하며, 결과를 저장할 수 있는 모바일 웹 애플리케이션입니다.  
