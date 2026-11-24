@@ -25,6 +25,27 @@ function saveUsersDB(users) {
     localStorage.setItem('fin_calc_users', JSON.stringify(users));
 }
 
+// ================= Google Sheets 기록 저장 (기존 Apps Script 그대로 사용) =================
+// doPost가 { sheet: '탭이름', 헤더명: 값 ... } 를 받아 해당 탭의 헤더와 이름이 같은 열에 한 줄 추가합니다.
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycbxPffF_RgVx79paq_XJNKNHcer42E8q73t_ngB_0YT-qbPGsLPbfBlKaBS4fXfKdUd0iQ/exec';
+const SHEET_LOGIN   = 'login';    // 로그인/회원가입 기록 탭 이름
+const SHEET_HISTORY = 'history';  // 계산 기록 탭 이름
+
+function sheetLog(sheet, data) {
+    try {
+        fetch(SHEET_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // preflight 방지
+            body: JSON.stringify(Object.assign({ sheet: sheet }, data))
+        })
+        .then(r => r.json())
+        .then(r => { if (!r.ok) console.warn('[Sheet] 저장 실패:', r.error); })
+        .catch(e => console.warn('[Sheet] 전송 실패:', e));
+    } catch (e) {
+        console.warn('[Sheet] 오류:', e);
+    }
+}
+
 function navTo(screenId) {
     currentScreen = screenId;
     document.querySelectorAll('.page-screen').forEach(s => s.classList.remove('active'));
@@ -167,6 +188,7 @@ function handleAuthSubmit(event, type) {
 
         currentUser = { name, email };
         localStorage.setItem('fin_calc_user', JSON.stringify(currentUser));
+        sheetLog(SHEET_LOGIN, { event: 'signup', name, email });
         showToast(`${name}님, 회원가입 완료 및 로그인되었습니다!`);
         closeAuthModal();
         updateHeaderAuthUI();
@@ -193,6 +215,7 @@ function handleAuthSubmit(event, type) {
 
         currentUser = { name: matchedUser.name, email: matchedUser.email };
         localStorage.setItem('fin_calc_user', JSON.stringify(currentUser));
+        sheetLog(SHEET_LOGIN, { event: 'login', name: matchedUser.name, email: matchedUser.email });
         showToast(`${matchedUser.name}님, 환영합니다!`);
         closeAuthModal();
         updateHeaderAuthUI();
@@ -202,6 +225,7 @@ function handleAuthSubmit(event, type) {
 }
 
 function handleLogout() {
+    if (currentUser) sheetLog(SHEET_LOGIN, { event: 'logout', name: currentUser.name, email: currentUser.email });
     currentUser = null;
     localStorage.removeItem('fin_calc_user');
     updateHeaderAuthUI();
@@ -260,7 +284,7 @@ function renderMypage() {
 
 function switchMypageTab(tab) {
     currentMypageTab = tab;
-
+    
     if (!currentUser) {
         openAuthModal('login');
         return;
@@ -483,6 +507,12 @@ function saveCurrentResult(type) {
 
     list.unshift(item);
     saveHistoryData(list);
+    sheetLog(SHEET_HISTORY, {
+        id: item.id, date: item.date, type: item.type, title: item.title,
+        amount: item.amount, sub: item.sub,
+        name: currentUser ? currentUser.name : '비회원',
+        email: currentUser ? currentUser.email : '비회원'
+    });
     showToast('마이페이지 기록에 저장되었습니다!');
 }
 
@@ -525,13 +555,13 @@ function renderHistoryList() {
 function renderHomeRecent() {
     const container = document.getElementById('home-recent-list');
     const viewAllBtn = document.getElementById('home-view-all-btn');
-
+    
     if (!currentUser) {
         if (viewAllBtn) viewAllBtn.classList.add('hidden');
         container.innerHTML = `
             <!-- Interactive Sample Preview Card for Non-Logged Users -->
             <div class="bg-gradient-to-br from-slate-900 to-indigo-950 text-white p-4 rounded-2xl shadow-md border border-indigo-500/30 space-y-3 relative overflow-hidden">
-
+                
                 <!-- Sample Item 1: After-Tax Return -->
                 <div class="bg-white/10 backdrop-blur-md p-3 rounded-xl border border-white/10 flex items-center justify-between">
                     <div class="flex items-center gap-2.5">
