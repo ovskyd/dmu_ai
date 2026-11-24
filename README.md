@@ -38,10 +38,9 @@ dmu_ai/
    └─ prototyping/             # 동작하는 프로토타입 버전 모음
       ├─ prototyping_week10_ver0.1.html
       ├─ prototyping_week11_ver0.2.html ~ ver0.6.html
-      └─ prototyping_week12_ver0.7.html ~ ver0.8.html
+      ├─ prototyping_week12_ver0.7.html ~ ver0.8.html
+      └─ prototyping_week13_ver0.9.html
 ```
-
----
 
 ## 실행 및 배포 방법
 
