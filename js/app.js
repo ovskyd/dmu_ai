@@ -28,7 +28,8 @@ function saveUsersDB(users) {
 // ================= Google Sheets 기록 저장 (기존 Apps Script 그대로 사용) =================
 // doPost가 { sheet: '탭이름', 헤더명: 값 ... } 를 받아 해당 탭의 헤더와 이름이 같은 열에 한 줄 추가합니다.
 const SHEET_URL = 'https://script.google.com/macros/s/AKfycbxPffF_RgVx79paq_XJNKNHcer42E8q73t_ngB_0YT-qbPGsLPbfBlKaBS4fXfKdUd0iQ/exec';
-const SHEET_LOGIN   = 'login';    // 로그인/회원가입 기록 탭 이름
+const SHEET_USERS   = 'users';    // 회원가입 기록 탭 이름 (헤더: email, name, pw, createdAt)
+const SHEET_LOGIN   = 'login';    // 로그인/로그아웃 기록 탭 이름 (헤더: event, name, email, createdAt)
 const SHEET_HISTORY = 'history';  // 계산 기록 탭 이름
 
 function sheetLog(sheet, data) {
@@ -188,7 +189,7 @@ function handleAuthSubmit(event, type) {
 
         currentUser = { name, email };
         localStorage.setItem('fin_calc_user', JSON.stringify(currentUser));
-        sheetLog(SHEET_LOGIN, { event: 'signup', name, email });
+        sheetLog(SHEET_USERS, { email, name }); // 비밀번호(pw)는 시트에 보내지 않음
         showToast(`${name}님, 회원가입 완료 및 로그인되었습니다!`);
         closeAuthModal();
         updateHeaderAuthUI();
