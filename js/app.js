@@ -39,9 +39,22 @@ function sheetLog(sheet, data) {
             headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // preflight 방지
             body: JSON.stringify(Object.assign({ sheet: sheet }, data))
         })
-        .then(r => r.json())
-        .then(r => { if (!r.ok) console.warn('[Sheet] 저장 실패:', r.error); })
-        .catch(e => console.warn('[Sheet] 전송 실패:', e));
+        .then(r => r.text())
+        .then(txt => {
+            let r = null;
+            try { r = JSON.parse(txt); } catch (e) {}
+            if (!r || !r.ok) {
+                const reason = r && r.error ? r.error : txt.slice(0, 80);
+                console.warn('[Sheet] 저장 실패 (' + sheet + '):', reason, txt);
+                setTimeout(() => showToast('시트 저장 실패(' + sheet + '): ' + reason), 2200);
+            } else {
+                console.log('[Sheet] 저장 성공 (' + sheet + ')', r);
+            }
+        })
+        .catch(e => {
+            console.warn('[Sheet] 전송 실패 (' + sheet + '):', e);
+            setTimeout(() => showToast('시트 전송 실패(' + sheet + '): ' + e.message), 2200);
+        });
     } catch (e) {
         console.warn('[Sheet] 오류:', e);
     }
